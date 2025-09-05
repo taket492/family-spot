@@ -1,100 +1,124 @@
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
 
-const quickTags = ['授乳室', 'オムツ替え', 'ベビーカーOK', '駐車場', 'キッズメニュー'];
-
-const categories = [
-  '公園',
-  '遊園地',
-  '動物園',
-  '水族館',
-  '博物館',
-  '科学館',
-  '屋内遊び場',
-  'その他',
-];
+type Spot = {
+  id: string;
+  name: string;
+  city: string;
+  type: string;
+  rating: number;
+  tags: string[];
+  images: string[];
+};
 
 export default function Home() {
   const router = useRouter();
   const [q, setQ] = useState('');
-  const [age, setAge] = useState('');
+  const [featured, setFeatured] = useState<Spot[]>([]);
 
   function runSearch(query?: string) {
     const qq = query ?? q;
     const params = new URLSearchParams();
     if (qq) params.set('q', qq);
-    if (age) params.set('age', age);
     router.push(`/search?${params.toString()}`);
   }
 
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      try {
+        const res = await fetch('/api/spots', { signal: controller.signal });
+        const data = await res.json();
+        const items: Spot[] = Array.isArray(data) ? data : data.items || [];
+        setFeatured(items.slice(0, 4));
+      } catch (_) {
+        // ignore
+      }
+    }
+    load();
+    return () => controller.abort();
+  }, []);
+
   return (
     <div className="page-container py-6">
-      <h1 className="text-2xl font-bold">静岡 子連れスポット検索</h1>
-      <p className="text-gray-600 mt-1">子連れにやさしい場所を、さっと見つけよう。</p>
-
-      <Card className="mt-4">
-        <CardContent>
-          <div className="grid gap-3">
-            <div className="flex gap-2 items-center">
-              <input
-                className="min-w-[240px] flex-1 border border-gray-300 rounded-xl px-3 py-3 text-base"
-                placeholder="市区名/名称/タグ 例: 沼津 公園"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') runSearch();
-                }}
-              />
-              <Button onClick={() => runSearch()}>検索</Button>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {quickTags.map((t) => (
-                <Badge
-                  key={t}
-                  label={t}
-                  className="cursor-pointer"
-                  onClick={() => runSearch(t)}
-                />
-              ))}
-            </div>
-
-            <div className="flex gap-2 items-center">
-              <label className="text-sm text-gray-700">お子さまの年齢</label>
-              <select
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                className="border border-gray-300 rounded-xl px-3 py-2 text-sm"
-              >
-                <option value="">指定なし</option>
-                <option value="0-2">0–2歳</option>
-                <option value="3-5">3–5歳</option>
-                <option value="6-12">6–12歳</option>
-              </select>
-            </div>
-
-            <div className="mt-2 grid grid-cols-2 gap-3">
-              {categories.map((c) => (
-                <Button
-                  key={c}
-                  variant="secondary"
-                  size="lg"
-                  className="rounded-full justify-start h-14 text-base"
-                  onClick={() => runSearch(c)}
-                >
-                  {c}
-                </Button>
-              ))}
-            </div>
+      {/* Hero */}
+      <div className="flex items-start gap-4">
+        <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden className="shrink-0">
+          <circle cx="32" cy="32" r="30" fill="#E8F5E9" stroke="#4CAF50" strokeWidth="3" />
+          <circle cx="24" cy="26" r="3" fill="#2e7d32" />
+          <circle cx="40" cy="26" r="3" fill="#2e7d32" />
+          <path d="M22 40c4 4 16 4 20 0" stroke="#2e7d32" strokeWidth="3" fill="none" strokeLinecap="round" />
+        </svg>
+        <div>
+          <div className="font-en text-3xl sm:text-4xl font-extrabold leading-tight">
+            <div>静岡県 子連れ向け</div>
+            <div>検索サイト</div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <div className="mt-6 text-sm text-gray-600">
-        <p>検索後は「リスト/地図」を切り替えて探せます。詳細ページからレビュー投稿も可能です。</p>
+      {/* Search box */}
+      <div className="mt-4">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 flex items-center rounded-2xl border-2 border-primary bg-[#F1FAF1] px-4 py-3">
+            <span className="text-primary mr-2">🔍</span>
+            <input
+              className="w-full bg-transparent outline-none text-base"
+              placeholder="キーワードで探す"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+            />
+          </div>
+          <Button onClick={() => runSearch()}>検索</Button>
+        </div>
+      </div>
+
+      {/* Quick filters */}
+      <div className="mt-4 grid grid-cols-3 gap-3 max-w-xl">
+        <button
+          className="rounded-2xl bg-[#E8F0FF] text-[#1e40af] px-4 py-3 text-base font-medium"
+          onClick={() => router.push('/search?age=0-2')}
+        >
+          0〜2歳
+        </button>
+        <button
+          className="rounded-2xl bg-[#E8F0FF] text-[#1e40af] px-4 py-3 text-base font-medium"
+          onClick={() => runSearch('屋内')}
+        >
+          屋内
+        </button>
+        <button
+          className="rounded-2xl bg-[#E8F0FF] text-[#1e40af] px-4 py-3 text-base font-medium"
+          onClick={() => runSearch('授乳室')}
+        >
+          授乳室あり
+        </button>
+      </div>
+
+      {/* Featured */}
+      <div className="mt-8 flex items-baseline justify-between">
+        <h2 className="text-2xl font-bold text-primary">注目のスポット</h2>
+        <button className="text-secondary font-medium" onClick={() => router.push('/search')}>もっと見る ＞</button>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {featured.map((s) => (
+          <Card key={s.id} interactive>
+            <div className="aspect-[4/3] w-full bg-neutralLight rounded-t-2xl overflow-hidden" />
+            <CardContent>
+              <div className="text-xl font-bold">{s.name}</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {s.tags?.slice(0, 4).map((t) => (
+                  <Badge key={t} label={t} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
