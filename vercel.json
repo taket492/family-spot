@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npm run prisma:push && next build",
+  "installCommand": "npm ci",
+  "framework": "nextjs"
+}
