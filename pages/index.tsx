@@ -99,6 +99,26 @@ export default function Home() {
         </button>
       </div>
 
+      {/* Entrypoints to category-first pages */}
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+        <Button
+          variant="secondary"
+          size="lg"
+          className="rounded-full h-14 text-base"
+          onClick={() => router.push('/search-top')}
+        >
+          スポットをカテゴリから探す
+        </Button>
+        <Button
+          variant="secondary"
+          size="lg"
+          className="rounded-full h-14 text-base"
+          onClick={() => router.push('/search-top-restaurant')}
+        >
+          レストランを特徴から探す
+        </Button>
+      </div>
+
       {/* Featured */}
       <div className="mt-8 flex items-baseline justify-between">
         <h2 className="text-2xl font-bold text-primary">注目のスポット</h2>
