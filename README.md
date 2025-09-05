@@ -34,6 +34,11 @@ Setup
 
    npm run dev
 
+Optional: prettier map tiles (MapTiler)
+
+- Get a free MapTiler API key and set `NEXT_PUBLIC_MAPTILER_KEY` in `.env`.
+- With the key, the map uses MapTiler Streets (vector) for faster, nicer rendering. Without it, it falls back to OSM raster tiles.
+
 Endpoints
 
 - GET /api/spots?q=沼津 → { items: Spot[], total }

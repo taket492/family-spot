@@ -18,6 +18,7 @@ type Props = {
 export default function Map({ spots, onSelect }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const instanceRef = useRef<MapLibreMap | null>(null);
+  const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
   const geojson = useMemo(() => {
     return {
@@ -33,20 +34,27 @@ export default function Map({ spots, onSelect }: Props) {
   useEffect(() => {
     if (!mapRef.current) return;
     if (instanceRef.current) return; // init once
+    const style = maptilerKey
+      ? // Use MapTiler vector style when key provided
+        `https://api.maptiler.com/maps/streets-v2/style.json?key=${maptilerKey}`
+      : // Fallback to OSM raster tiles with demo glyphs
+        {
+          version: 8,
+          glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+          sources: {
+            osm: {
+              type: 'raster',
+              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+              tileSize: 256,
+              attribution: '&copy; OpenStreetMap contributors',
+            },
+          },
+          layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+        } as any;
+
     const map = new maplibregl.Map({
       container: mapRef.current,
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '&copy; OpenStreetMap contributors',
-          },
-        },
-        layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
-      },
+      style,
       center: [138.3831, 34.9769], // Shizuoka approx
       zoom: 8.5,
     });
@@ -111,7 +119,8 @@ export default function Map({ spots, onSelect }: Props) {
           filter: ['has', 'point_count'],
           layout: {
             'text-field': ['get', 'point_count_abbreviated'],
-            'text-font': ['Noto Sans Regular'],
+            // Prefer fonts available in MapTiler or demo glyphs
+            'text-font': ['Noto Sans Bold', 'Open Sans Bold'],
             'text-size': 12,
           },
           paint: {

@@ -24,6 +24,7 @@ export default function SearchPage() {
   const [total, setTotal] = useState(0);
   const [tab, setTab] = useState<'list' | 'map'>('list');
   const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
   const [sortMode, setSortMode] = useState<'default' | 'distance' | 'rating'>('default');
 
@@ -102,22 +103,31 @@ export default function SearchPage() {
           >検索</Button>
           <Button
             variant={sortMode === 'distance' ? 'primary' : 'secondary'}
+            disabled={locating}
             onClick={() => {
               if (sortMode === 'distance') {
                 setSortMode('default');
                 return;
               }
-              if (!navigator.geolocation) return alert('位置情報が利用できません');
+              if (!navigator.geolocation) {
+                alert('位置情報が利用できません');
+                return;
+              }
+              setLocating(true);
               navigator.geolocation.getCurrentPosition(
                 (pos) => {
                   setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
                   setSortMode('distance');
+                  setLocating(false);
                 },
-                () => alert('現在地を取得できませんでした'),
+                () => {
+                  alert('現在地を取得できませんでした');
+                  setLocating(false);
+                },
                 { enableHighAccuracy: true, maximumAge: 60_000 }
               );
             }}
-          >現在地から近い順</Button>
+          >{locating ? '現在地取得中…' : '現在地から近い順'}</Button>
           <Button
             variant={sortMode === 'rating' ? 'primary' : 'secondary'}
             onClick={() => setSortMode(sortMode === 'rating' ? 'default' : 'rating')}
