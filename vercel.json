@@ -1,5 +1,5 @@
 {
   "buildCommand": "npm run prisma:push && next build",
-  "installCommand": "npm ci",
+  "installCommand": "npm install --no-audit --no-fund",
   "framework": "nextjs"
 }
