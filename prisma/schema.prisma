@@ -37,3 +37,27 @@ model Review {
   status    String   @default("public")
   createdAt DateTime @default(now())
 }
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  city        String
+  venue       String?
+  address     String?
+  lat         Float
+  lng         Float
+  startAt     DateTime
+  endAt       DateTime?
+  priceBand   String?
+  tags        String   // JSON string of string[]
+  images      String   // JSON string of string[]
+  source      String?
+  url         String?
+  status      String   @default("public")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([startAt])
+  @@index([city])
+}

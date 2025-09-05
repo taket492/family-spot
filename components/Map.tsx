@@ -141,6 +141,7 @@ export default function Map({ spots, onSelect }: Props) {
               'match',
               ['get', 'type'],
               'restaurant', '#FF9800',
+              'event', '#7E57C2',
               'spot', '#4CAF50',
               /* default */ '#4CAF50',
             ],

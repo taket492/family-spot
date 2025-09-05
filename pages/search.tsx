@@ -17,10 +17,24 @@ type Spot = {
   images: string[];
 };
 
+type EventItem = {
+  id: string;
+  title: string;
+  city: string;
+  lat: number;
+  lng: number;
+  startAt: string;
+  endAt?: string | null;
+  tags: string[];
+  images: string[];
+};
+
 export default function SearchPage() {
   const router = useRouter();
   const q = (router.query.q as string) || '';
+  const [mode, setMode] = useState<'spots' | 'events'>('spots');
   const [items, setItems] = useState<Spot[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [total, setTotal] = useState(0);
   const [tab, setTab] = useState<'list' | 'map'>('list');
   const [loading, setLoading] = useState(false);
@@ -34,11 +48,25 @@ export default function SearchPage() {
       if (q == null) return;
       setLoading(true);
       try {
-        const res = await fetch(`/api/spots?q=${encodeURIComponent(q)}`, { signal: controller.signal });
-        const data = await res.json();
-        const arr = Array.isArray(data) ? data : data.items;
-        setItems(arr || []);
-        setTotal(Array.isArray(data) ? arr.length : data.total || arr.length);
+        if (mode === 'spots') {
+          const res = await fetch(`/api/spots?q=${encodeURIComponent(q)}`, { signal: controller.signal });
+          const data = await res.json();
+          const arr = Array.isArray(data) ? data : data.items;
+          setItems(arr || []);
+          setTotal(Array.isArray(data) ? arr.length : data.total || arr.length);
+        } else {
+          const params = new URLSearchParams();
+          params.set('q', q || '');
+          const from = new Date();
+          const to = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+          params.set('from', from.toISOString());
+          params.set('to', to.toISOString());
+          const res = await fetch(`/api/events?${params.toString()}`, { signal: controller.signal });
+          const data = await res.json();
+          const arr = Array.isArray(data) ? data : data.items;
+          setEvents(arr || []);
+          setTotal(Array.isArray(data) ? arr.length : data.total || arr.length);
+        }
       } catch (e) {
         if ((e as any).name !== 'AbortError') console.error(e);
       } finally {
@@ -47,12 +75,12 @@ export default function SearchPage() {
     }
     run();
     return () => controller.abort();
-  }, [q]);
+  }, [q, mode]);
 
-  const mapSpots = useMemo(
-    () => items.map(({ id, name, lat, lng, type }) => ({ id, name, lat, lng, type })),
-    [items]
-  );
+  const mapSpots = useMemo(() => {
+    if (mode === 'spots') return items.map(({ id, name, lat, lng, type }) => ({ id, name, lat, lng, type }));
+    return events.map(({ id, title, lat, lng }) => ({ id, name: title, lat, lng, type: 'event' as const }));
+  }, [items, events, mode]);
 
   function haversine(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
     const R = 6371e3; // meters
@@ -68,7 +96,7 @@ export default function SearchPage() {
     return R * c; // meters
   }
 
-  const sorted = useMemo(() => {
+  const sortedSpots = useMemo(() => {
     if (sortMode === 'rating') return [...items].sort((a, b) => (b.rating || 0) - (a.rating || 0));
     if (sortMode === 'distance' && geo) {
       return [...items]
@@ -78,6 +106,16 @@ export default function SearchPage() {
     }
     return items;
   }, [items, sortMode, geo]);
+
+  const sortedEvents = useMemo(() => {
+    if (sortMode === 'distance' && geo) {
+      return [...events]
+        .map((e) => ({ e, d: haversine(geo, { lat: e.lat, lng: e.lng }) }))
+        .sort((a, b) => a.d - b.d)
+        .map(({ e }) => e);
+    }
+    return events;
+  }, [events, sortMode, geo]);
 
   return (
     <div className="page-container py-4">
@@ -136,42 +174,78 @@ export default function SearchPage() {
       </div>
       <p className="text-gray-500 mt-2">検索結果: {loading ? '読み込み中…' : `${total}件`}</p>
       <div className="flex gap-2 mt-2">
+        <Button variant={mode === 'spots' ? 'primary' : 'secondary'} onClick={() => setMode('spots')}>スポット</Button>
+        <Button variant={mode === 'events' ? 'primary' : 'secondary'} onClick={() => setMode('events')}>イベント</Button>
+        <div className="flex-1" />
         <Button variant={tab === 'list' ? 'primary' : 'secondary'} onClick={() => setTab('list')}>リスト</Button>
         <Button variant={tab === 'map' ? 'primary' : 'secondary'} onClick={() => setTab('map')}>地図</Button>
       </div>
       {tab === 'list' ? (
         <div className="mt-3">
-          {sorted.map((s) => {
-            const distance = geo ? Math.round(haversine(geo, { lat: s.lat, lng: s.lng }) / 100) / 10 : null; // km
-            return (
-              <Card key={s.id} className="my-3">
-                <CardContent>
-                  <div className="flex justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-semibold truncate">{s.name}</div>
-                      <div className="text-gray-500 text-sm">{s.city} ・ ⭐ {s.rating?.toFixed?.(1) ?? 0}</div>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {s.tags?.slice(0, 6).map((t) => (
-                          <Badge key={t} label={t} />
-                        ))}
+          {mode === 'spots' ? (
+            sortedSpots.map((s) => {
+              const distance = geo ? Math.round(haversine(geo, { lat: s.lat, lng: s.lng }) / 100) / 10 : null; // km
+              return (
+                <Card key={s.id} className="my-3">
+                  <CardContent>
+                    <div className="flex justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-semibold truncate">{s.name}</div>
+                        <div className="text-gray-500 text-sm">{s.city} ・ ⭐ {s.rating?.toFixed?.(1) ?? 0}</div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {s.tags?.slice(0, 6).map((t) => (
+                            <Badge key={t} label={t} />
+                          ))}
+                        </div>
+                        {distance != null && <div className="text-gray-500 text-xs mt-1">約 {distance} km</div>}
                       </div>
-                      {distance != null && <div className="text-gray-500 text-xs mt-1">約 {distance} km</div>}
+                      <div className="shrink-0 self-center">
+                        <Button onClick={() => router.push(`/spots/${s.id}`)}>詳細</Button>
+                      </div>
                     </div>
-                    <div className="shrink-0 self-center">
-                      <Button onClick={() => router.push(`/spots/${s.id}`)}>詳細</Button>
+                  </CardContent>
+                </Card>
+              );
+            })
+          ) : (
+            sortedEvents.map((e) => {
+              const distance = geo ? Math.round(haversine(geo, { lat: e.lat, lng: e.lng }) / 100) / 10 : null; // km
+              const start = new Date(e.startAt);
+              const end = e.endAt ? new Date(e.endAt) : null;
+              const dateStr = end
+                ? `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`
+                : start.toLocaleString();
+              return (
+                <Card key={e.id} className="my-3">
+                  <CardContent>
+                    <div className="flex justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-semibold truncate">{e.title}</div>
+                        <div className="text-gray-500 text-sm">{e.city} ・ {dateStr}</div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {e.tags?.slice(0, 6).map((t) => (
+                            <Badge key={t} label={t} />
+                          ))}
+                        </div>
+                        {distance != null && <div className="text-gray-500 text-xs mt-1">約 {distance} km</div>}
+                      </div>
+                      <div className="shrink-0 self-center">
+                        <Button onClick={() => router.push(`/events/${e.id}`)}>詳細</Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </div>
       ) : (
         <div className="mt-3">
           <Map
             spots={mapSpots}
             onSelect={(id) => {
-              router.push(`/spots/${id}`);
+              if (mode === 'spots') router.push(`/spots/${id}`);
+              else router.push(`/events/${id}`);
             }}
           />
         </div>
