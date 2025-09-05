@@ -66,7 +66,7 @@ export default function Map({ spots, onSelect }: Props) {
         });
       }
 
-      // Cluster circles
+      // Cluster circles (brand green scale)
       if (!m.getLayer('clusters')) {
         m.addLayer({
           id: 'clusters',
@@ -77,13 +77,13 @@ export default function Map({ spots, onSelect }: Props) {
             'circle-color': [
               'step',
               ['get', 'point_count'],
-              '#93c5fd',
+              '#C8E6C9',
               10,
-              '#60a5fa',
+              '#81C784',
               30,
-              '#3b82f6',
+              '#4CAF50',
               100,
-              '#2563eb',
+              '#388E3C',
             ],
             'circle-radius': [
               'step',
@@ -120,7 +120,7 @@ export default function Map({ spots, onSelect }: Props) {
         });
       }
 
-      // Unclustered points
+      // Unclustered points (spot=primary green, restaurant=orange)
       if (!m.getLayer('unclustered-point')) {
         m.addLayer({
           id: 'unclustered-point',
@@ -131,13 +131,11 @@ export default function Map({ spots, onSelect }: Props) {
             'circle-color': [
               'match',
               ['get', 'type'],
-              'restaurant',
-              '#f59e0b',
-              'spot',
-              '#10b981',
-              /* default */ '#10b981',
+              'restaurant', '#FF9800',
+              'spot', '#4CAF50',
+              /* default */ '#4CAF50',
             ],
-            'circle-radius': 9,
+            'circle-radius': 10,
             'circle-stroke-width': 2,
             'circle-stroke-color': '#ffffff',
           },

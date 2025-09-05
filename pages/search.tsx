@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import Map from '@/components/Map';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Card, CardContent } from '@/components/ui/Card';
 
 type Spot = {
   id: string;
@@ -22,7 +25,7 @@ export default function SearchPage() {
   const [tab, setTab] = useState<'list' | 'map'>('list');
   const [loading, setLoading] = useState(false);
   const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
-  const [sortMode, setSortMode] = useState<'default' | 'distance'>('default');
+  const [sortMode, setSortMode] = useState<'default' | 'distance' | 'rating'>('default');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -65,18 +68,21 @@ export default function SearchPage() {
   }
 
   const sorted = useMemo(() => {
-    if (sortMode !== 'distance' || !geo) return items;
-    return [...items]
-      .map((s) => ({ s, d: haversine(geo, { lat: s.lat, lng: s.lng }) }))
-      .sort((a, b) => a.d - b.d)
-      .map(({ s }) => s);
+    if (sortMode === 'rating') return [...items].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    if (sortMode === 'distance' && geo) {
+      return [...items]
+        .map((s) => ({ s, d: haversine(geo, { lat: s.lat, lng: s.lng }) }))
+        .sort((a, b) => a.d - b.d)
+        .map(({ s }) => s);
+    }
+    return items;
   }, [items, sortMode, geo]);
 
   return (
-    <div className="max-w-[980px] mx-auto p-4">
+    <div className="page-container py-4">
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
         <input
-          className="flex-1 border border-gray-300 rounded-md px-3 py-3 text-base"
+          className="flex-1 border border-gray-300 rounded-xl px-3 py-3 text-base"
           defaultValue={q}
           placeholder="検索ワードを入力"
           onKeyDown={(e) => {
@@ -85,19 +91,14 @@ export default function SearchPage() {
           }}
         />
         <div className="flex gap-2">
-          <button
-            className="bg-gray-900 text-white rounded-md px-4 py-3 min-h-[44px] min-w-[44px]"
+          <Button
             onClick={() => {
               const el = document.querySelector<HTMLInputElement>('input[placeholder="検索ワードを入力"]');
               router.push(`/search?q=${encodeURIComponent(el?.value || '')}`);
             }}
-          >
-            検索
-          </button>
-          <button
-            className={`rounded-md px-4 py-3 min-h-[44px] min-w-[44px] border ${
-              sortMode === 'distance' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-900 border-gray-300'
-            }`}
+          >検索</Button>
+          <Button
+            variant={sortMode === 'distance' ? 'primary' : 'secondary'}
             onClick={() => {
               if (sortMode === 'distance') {
                 setSortMode('default');
@@ -113,53 +114,42 @@ export default function SearchPage() {
                 { enableHighAccuracy: true, maximumAge: 60_000 }
               );
             }}
-          >
-            現在地から近い順
-          </button>
+          >現在地から近い順</Button>
+          <Button
+            variant={sortMode === 'rating' ? 'primary' : 'secondary'}
+            onClick={() => setSortMode(sortMode === 'rating' ? 'default' : 'rating')}
+          >評価が高い順</Button>
         </div>
       </div>
       <p className="text-gray-500 mt-2">検索結果: {loading ? '読み込み中…' : `${total}件`}</p>
       <div className="flex gap-2 mt-2">
-        <button
-          className={`px-3 py-2 rounded-md border min-h-[44px] min-w-[44px] ${
-            tab === 'list' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-300'
-          }`}
-          onClick={() => setTab('list')}
-        >
-          リスト
-        </button>
-        <button
-          className={`px-3 py-2 rounded-md border min-h-[44px] min-w-[44px] ${
-            tab === 'map' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-300'
-          }`}
-          onClick={() => setTab('map')}
-        >
-          地図
-        </button>
+        <Button variant={tab === 'list' ? 'primary' : 'secondary'} onClick={() => setTab('list')}>リスト</Button>
+        <Button variant={tab === 'map' ? 'primary' : 'secondary'} onClick={() => setTab('map')}>地図</Button>
       </div>
       {tab === 'list' ? (
         <div className="mt-3">
           {sorted.map((s) => {
             const distance = geo ? Math.round(haversine(geo, { lat: s.lat, lng: s.lng }) / 100) / 10 : null; // km
             return (
-              <div className="border border-gray-200 rounded-lg p-3 my-2" key={s.id}>
-                <div className="flex justify-between gap-3">
-                  <div>
-                    <div className="font-semibold">{s.name}</div>
-                    <div className="text-gray-500">{s.city} ・ ⭐ {s.rating?.toFixed?.(1) ?? 0}</div>
-                    <div className="text-gray-500">{s.tags?.join(', ')}</div>
-                    {distance != null && <div className="text-gray-500">約 {distance} km</div>}
+              <Card key={s.id} className="my-3">
+                <CardContent>
+                  <div className="flex justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-semibold truncate">{s.name}</div>
+                      <div className="text-gray-500 text-sm">{s.city} ・ ⭐ {s.rating?.toFixed?.(1) ?? 0}</div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {s.tags?.slice(0, 6).map((t) => (
+                          <Badge key={t} label={t} />
+                        ))}
+                      </div>
+                      {distance != null && <div className="text-gray-500 text-xs mt-1">約 {distance} km</div>}
+                    </div>
+                    <div className="shrink-0 self-center">
+                      <Button onClick={() => router.push(`/spots/${s.id}`)}>詳細</Button>
+                    </div>
                   </div>
-                  <div className="shrink-0">
-                    <button
-                      className="bg-gray-900 text-white rounded-md px-4 py-3 min-h-[44px] min-w-[44px]"
-                      onClick={() => router.push(`/spots/${s.id}`)}
-                    >
-                      詳細
-                    </button>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>
