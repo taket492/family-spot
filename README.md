@@ -73,6 +73,20 @@ Deploy to Vercel
   5. Build Command: `npm run prisma:push && next build` (or run db push once locally and just `next build`)
   6. Deploy; the API routes will connect to Neon
 
+Vercel Environment Variables
+
+- `DATABASE_URL`: Postgres接続文字列（Neon/Supabaseなど）
+- `NEXT_PUBLIC_MAPTILER_KEY`: MapTilerのAPIキー（任意。指定時はMapTilerベクターマップ、未指定時はOSMラスタ）
+
+Versioning & Release
+
+- Versioning: Semantic Versioning（MAJOR.MINOR.PATCH）
+- Commits: Conventional Commits（例: `feat(map): add clustering`）
+- Release: GitHub Actions（release-please）で自動リリースPRを生成し、マージでタグ/リリース作成
+  - 対象ブランチ: `main`
+  - 自動生成: CHANGELOG, バージョン自動更新、GitHub Release
+  - 手動タグ運用と併用可（現在は v0.1.0 を用意）
+
 Notes for Prisma
 
 - The schema uses Postgres provider. For local development, prefer pointing `.env` to a Postgres instance to match production.
