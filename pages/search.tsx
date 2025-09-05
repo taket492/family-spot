@@ -80,6 +80,9 @@ export default function SearchPage() {
 
   return (
     <div className="page-container py-4">
+      <div className="mb-2">
+        <Button variant="secondary" onClick={() => router.push('/')}>← トップへ戻る</Button>
+      </div>
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
         <input
           className="flex-1 border border-gray-300 rounded-xl px-3 py-3 text-base"
