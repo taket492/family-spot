@@ -12,10 +12,12 @@
     "prisma:push": "prisma db push",
     "seed": "node scripts/seed.js",
     "import:csv": "node scripts/import-csv.js",
-    "add:image": "node scripts/add-image.js"
+    "add:image": "node scripts/add-image.js",
+    "migrate:images:supabase": "node scripts/migrate-images-to-supabase.js"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
+    "@supabase/supabase-js": "^2.45.0",
     "csv-parse": "^5.6.0",
     "maplibre-gl": "^4.3.2",
     "next": "^14.2.5",
