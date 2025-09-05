@@ -127,8 +127,17 @@ export default function Home() {
 
       <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
         {featured.map((s) => (
-          <Card key={s.id} interactive>
-            <div className="aspect-[4/3] w-full bg-neutralLight rounded-t-2xl overflow-hidden" />
+          <Card key={s.id} interactive className="cursor-pointer" onClick={() => router.push(`/spots/${s.id}`)}>
+            {s.images?.[0] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={s.images[0]}
+                alt={s.name}
+                className="aspect-[4/3] w-full object-cover rounded-t-2xl bg-neutralLight"
+              />
+            ) : (
+              <div className="aspect-[4/3] w-full bg-neutralLight rounded-t-2xl overflow-hidden" />
+            )}
             <CardContent>
               <div className="text-xl font-bold">{s.name}</div>
               <div className="mt-2 flex flex-wrap gap-2">
