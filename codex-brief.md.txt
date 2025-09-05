@@ -1,0 +1,221 @@
+Codex Brief（plan用）— 地図＆API接続版MVP
+
+このブリーフは、現在のキャンバス上プロトタイプ（フロント）に MapLibre（OSM）連携とAPI接続を実装して、MVPを起動できる状態にするための作業指示です。以後の更新は本ドキュメントへ追記していきます。
+
+1. 目的とスコープ
+
+目的: 静岡県の子連れ向けスポット/レストラン検索サイトのMVPを、無料枠で動作する地図・検索・詳細・レビュー投稿まで一貫動作させる。
+
+スコープ:
+
+画面: トップ / 検索結果（リスト/地図） / 詳細 / レビュー投稿
+
+地図: MapLibre + OpenStreetMap タイル（無料）。将来 MapTiler 無料キーへ差し替え可。
+
+API: Spot一覧/詳細、Review投稿。
+
+2. 技術構成
+
+フロント: Next.js / React / Tailwind（キャンバスのプロトタイプに準拠）
+
+地図: MapLibre GL JS（OSMタイル直参照/帰属表示）
+
+DB/ORM: Prisma + PostgreSQL（Neonの無料枠等）※初期はSQLiteでも可
+
+デプロイ（想定）: Vercel（フロント/API） + Neon（Postgres）
+
+3. エンドポイント仕様（フロント実装と一致）
+
+現在のプロトタイプは /api/spots と /api/spots/[id]、/api/reviews を利用します。
+
+3.1 GET /api/spots
+
+クエリ: q（任意。名称/市区/タグに対する部分一致）
+
+レスポンス: { items: Spot[], total: number } または Spot[]（MVPは前者推奨）
+
+例: /api/spots?q=沼津
+
+3.2 GET /api/spots/:id
+
+パス: id（SpotのID）
+
+レスポンス: Spot（関連レビュー含む）
+
+3.3 POST /api/reviews
+
+JSON: { spotId: string, name: string, stars: 1..5, age: string, text: string }
+
+挙動: レビュー作成後、Spotの平均評価を簡易再計算
+
+レスポンス: { ok: true }
+
+4. データモデル（Prisma）
+
+model Spot {
+  id        String   @id @default(cuid())
+  type      String   // "spot" | "restaurant"
+  name      String
+  city      String
+  address   String?
+  lat       Float
+  lng       Float
+  phone     String?
+  tags      String[]
+  openHours Json?
+  priceBand String?
+  images    String[]
+  rating    Float    @default(0)
+  reviews   Review[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  spotId    String
+  spot      Spot     @relation(fields: [spotId], references: [id])
+  stars     Int
+  childAge  String
+  text      String
+  status    String   @default("public")
+  createdAt DateTime @default(now())
+}
+
+5. API 実装（Next.js API Routes）
+
+5.1 /pages/api/spots/index.ts
+
+import type { NextApiRequest, NextApiResponse } from "next";
+import { prisma } from "@/lib/db";
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const q = (req.query.q as string) || "";
+    const where: any = q
+      ? {
+          OR: [
+            { name: { contains: q } },
+            { city: { contains: q } },
+            { tags: { hasSome: q.split(/\s+/).filter(Boolean) } },
+          ],
+        }
+      : {};
+
+    const items = await prisma.spot.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+    });
+    res.status(200).json({ items, total: items.length });
+  } catch (e) {
+    res.status(500).json({ error: "internal_error" });
+  }
+}
+
+5.2 /pages/api/spots/[id].ts
+
+import type { NextApiRequest, NextApiResponse } from "next";
+import { prisma } from "@/lib/db";
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { id } = req.query as { id: string };
+    const spot = await prisma.spot.findUnique({
+      where: { id },
+      include: {
+        reviews: { where: { status: "public" }, orderBy: { createdAt: "desc" } },
+      },
+    });
+    if (!spot) return res.status(404).json({ error: "not_found" });
+    res.status(200).json(spot);
+  } catch (e) {
+    res.status(500).json({ error: "internal_error" });
+  }
+}
+
+5.3 /pages/api/reviews.ts
+
+import type { NextApiRequest, NextApiResponse } from "next";
+import { prisma } from "@/lib/db";
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });
+    const { spotId, name, stars, age, text } = req.body || {};
+    if (!spotId || !name || !stars || !age || !text) return res.status(400).json({ error: "invalid_payload" });
+
+    const clamped = Math.max(1, Math.min(5, Number(stars)));
+    const exists = await prisma.spot.findUnique({ where: { id: spotId } });
+    if (!exists) return res.status(404).json({ error: "spot_not_found" });
+
+    await prisma.review.create({
+      data: { spotId, stars: clamped, childAge: String(age), text: String(text).slice(0, 1000), status: "public" },
+    });
+
+    const stats = await prisma.review.aggregate({ _avg: { stars: true }, where: { spotId, status: "public" } });
+    await prisma.spot.update({ where: { id: spotId }, data: { rating: stats._avg.stars || 0 } });
+
+    res.status(200).json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: "internal_error" });
+  }
+}
+
+6. DBセットアップ
+
+依存: npm i prisma @prisma/client
+
+.env （Postgres の例）
+
+DATABASE_PROVIDER=postgresql
+DATABASE_URL=postgresql://user:pass@host:5432/kids
+
+マイグレーション: npx prisma migrate dev --name init
+
+シード（任意）: サンプル3件（静岡/三島/沼津）を投入する scripts/seed.ts を利用
+
+7. フロント接続（現状のプロトタイプ）
+
+すでに fetch('/api/spots?q=...'), fetch('/api/spots/:id'), POST /api/reviews を使用
+
+MapLibre 連携済み（OSMタイル）。ポップアップから「詳細」遷移可能
+
+8. 受け入れ基準（E2E）
+
+トップ→検索→検索結果（件数表示）
+
+検索結果→任意カードクリック→詳細取得（レビュー表示）
+
+詳細→レビュー投稿→即時反映（平均評価更新）
+
+検索結果の地図タブで、ピン表示・ポップアップ→詳細遷移
+
+モバイル幅 360–414px でUI崩れなし、タップ領域 44px 以上
+
+9. 今後の拡張（次スプリント候補）
+
+現在地ベースの距離ソート（Geolocation API）
+
+Mapクラスタリング（結果が増えた場合）
+
+営業中フィルター（曜日×営業時間）
+
+管理画面（CSVインポート/画像アップロード/通報対応）
+
+10. 作業手順（まとめ）
+
+Prisma スキーマ反映 → マイグレーション → seed（任意）
+
+/pages/api/spots と /pages/api/spots/[id]、/pages/api/reviews を実装
+
+ローカルで npm run dev 起動、検索〜投稿まで E2E で確認
+
+デプロイ（Vercel + Neon）
+
+備考
+
+以前提示していた GET /api/search 仕様は、現行フロントに合わせて ``** に統合**しました。必要に応じて /api/search を別途用意しても構いません（パラメトリックに高度化しやすい）。
+
+Map タイルは OSM を直参照。商用/高負荷に備え、MapTiler 無料キー差替えを将来PRで用意しておくと安全です。
+
