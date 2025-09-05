@@ -1,0 +1,32 @@
+name: events-sync
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # Every day 03:00 JST (18:00 UTC previous day)
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install deps
+        run: npm ci --no-audit --no-fund
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+      - name: DB push (optional)
+        if: env.DATABASE_URL != ''
+        run: npm run prisma:push
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Sync events from sources
+        run: node scripts/sync-events.js scripts/event-sources.json
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

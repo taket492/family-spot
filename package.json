@@ -12,6 +12,8 @@
     "prisma:push": "prisma db push",
     "seed": "node scripts/seed.js",
     "import:csv": "node scripts/import-csv.js",
+    "import:events:csv": "node scripts/import-events-csv.js",
+    "sync:events": "node scripts/sync-events.js",
     "add:image": "node scripts/add-image.js",
     "migrate:images:supabase": "node scripts/migrate-images-to-supabase.js"
   },

@@ -45,12 +45,18 @@ Endpoints
 - GET /api/spots/:id → Spot with reviews
 - POST /api/reviews { spotId, name, stars(1..5), age, text }
 
+Events API
+
+- GET /api/events?q=三島&from=ISO8601&to=ISO8601 → { items: Event[], total }
+- GET /api/events/:id → Event
+
 Notes
 
 - MapLibre uses OSM raster tiles and clusters pins; clicking a cluster zooms in, clicking a point opens the detail.
 - Tailwind is enabled; utility classes are used across pages.
 - Buttons/inputs meet recommended 44px tap size.
 - “現在地から近い順” toggles geolocation-based sorting (permission required).
+- Search page includes a toggle between Spots and Events; Events support list/map view and distance sort.
 
 Map legend
 
@@ -72,6 +78,19 @@ Deploy to Vercel
   4. Add Environment Variable `DATABASE_URL` with your Neon connection string
   5. Build Command: `npm run prisma:push && next build` (or run db push once locally and just `next build`)
   6. Deploy; the API routes will connect to Neon
+
+Import Events (CSV)
+
+- Prepare a CSV with headers like: `title,city,address,venue,lat,lng,startAt,endAt,tags,images,url`
+- Dry run: `npm run import:events:csv -- ./path/to/events.csv --dry-run`
+- Import: `npm run import:events:csv -- ./path/to/events.csv`
+
+Auto Sync (GitHub Actions)
+
+- Configure official sources in `scripts/event-sources.json`, e.g.:
+  `[{ "type": "csv", "url": "https://example.org/events.csv", "name": "City X" }]`
+- Set `DATABASE_URL` secret in GitHub repo
+- Workflow runs daily; respects ToS by only fetching configured public feeds
 
 Vercel Environment Variables
 
