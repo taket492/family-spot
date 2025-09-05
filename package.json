@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
+    "@vercel/blob": "^0.23.0",
     "@supabase/supabase-js": "^2.45.0",
     "csv-parse": "^5.6.0",
     "maplibre-gl": "^4.3.2",

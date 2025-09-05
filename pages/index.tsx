@@ -117,6 +117,14 @@ export default function Home() {
         >
           レストランを特徴から探す
         </Button>
+        <Button
+          variant="primary"
+          size="lg"
+          className="rounded-full h-14 text-base"
+          onClick={() => router.push('/spots/new')}
+        >
+          スポットを登録する
+        </Button>
       </div>
 
       {/* Featured */}
