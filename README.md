@@ -81,3 +81,10 @@ Notes for Prisma
 Clustering
 
 - Implemented via a GeoJSON source with `cluster: true`, plus circle and count symbol layers. Behavior mirrors Mapbox’s cluster UX.
+
+Changelog
+
+- 2025-09-06
+  - Map: add MapLibre glyphs and improve cluster count label font.
+  - Search: Geolocation sorting UX with locating indicator and disable during fetch.
+  - Map: Support MapTiler Streets v2 via `NEXT_PUBLIC_MAPTILER_KEY` with OSM fallback.
