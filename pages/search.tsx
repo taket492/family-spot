@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
-import Map from '@/components/Map';
+import dynamic from 'next/dynamic';
+const Map = dynamic(() => import('@/components/Map'), { ssr: false });
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
