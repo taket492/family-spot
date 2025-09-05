@@ -11,7 +11,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
     "seed": "node scripts/seed.js",
-    "import:csv": "node scripts/import-csv.js"
+    "import:csv": "node scripts/import-csv.js",
+    "add:image": "node scripts/add-image.js"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",

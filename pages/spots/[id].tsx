@@ -61,7 +61,16 @@ export default function SpotDetail() {
       {spot && (
         <div className="mt-4">
           {/* Image or placeholder */}
-          <div className="rounded-2xl overflow-hidden bg-neutralLight aspect-[4/3]"></div>
+          {spot.images?.[0] ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={spot.images[0]}
+              alt={spot.name}
+              className="rounded-2xl w-full h-auto object-cover aspect-[4/3] bg-neutralLight"
+            />
+          ) : (
+            <div className="rounded-2xl overflow-hidden bg-neutralLight aspect-[4/3]"></div>
+          )}
 
           {/* Title + rating */}
           <div className="mt-4">
