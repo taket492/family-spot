@@ -11,7 +11,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) return res.status(500).json({ error: 'blob_token_missing', message: 'Set BLOB_READ_WRITE_TOKEN in Vercel env' });
     const filename = (req.query.filename as string) || `upload-${Date.now()}`;
-    const contentType = (req.query.contentType as string) || 'application/octet-stream';
+    let contentType = (req.query.contentType as string) || 'image/jpeg';
+    if (!/^image\//.test(contentType)) contentType = 'image/jpeg';
     const key = `spots/${Date.now()}-${filename}`;
     const blob = await put(key, req, { access: 'public', contentType, token });
     return res.status(200).json({ url: blob.url, pathname: blob.pathname, contentType: blob.contentType });
