@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run prisma:push && next build",
+  "buildCommand": "sh -c 'if [ -n \"$DATABASE_URL\" ]; then npm run prisma:push; else echo \"[warn] DATABASE_URL not set – skipping prisma:push\"; fi; next build'",
   "installCommand": "npm install --no-audit --no-fund",
   "framework": "nextjs"
 }
