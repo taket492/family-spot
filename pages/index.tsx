@@ -14,10 +14,21 @@ type Spot = {
   images: string[];
 };
 
+type EventItem = {
+  id: string;
+  title: string;
+  city: string;
+  startAt: string;
+  endAt?: string | null;
+  tags: string[];
+  images: string[];
+};
+
 export default function Home() {
   const router = useRouter();
   const [q, setQ] = useState('');
   const [featured, setFeatured] = useState<Spot[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
 
   function runSearch(query?: string) {
     const qq = query ?? q;
@@ -41,6 +52,30 @@ export default function Home() {
     load();
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    const ctl = new AbortController();
+    async function loadEvents() {
+      try {
+        // APIはデフォルトで「今日〜14日」を返すのでパラメータ不要
+        const res = await fetch('/api/events', { signal: ctl.signal });
+        const data = await res.json();
+        const items: EventItem[] = Array.isArray(data) ? data : data.items || [];
+        setEvents(items.slice(0, 4));
+      } catch (_) {
+        // ignore
+      }
+    }
+    loadEvents();
+    return () => ctl.abort();
+  }, []);
+
+  function formatEventDate(e: EventItem) {
+    const start = new Date(e.startAt);
+    const end = e.endAt ? new Date(e.endAt) : null;
+    if (end) return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+    return start.toLocaleString();
+  }
 
   return (
     <div className="page-container py-6">
@@ -156,6 +191,41 @@ export default function Home() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Events */}
+      <div className="mt-10 flex items-baseline justify-between">
+        <h2 className="text-2xl font-bold text-primary">開催中・これからのイベント</h2>
+        <button className="text-secondary font-medium" onClick={() => router.push('/search?kind=events')}>もっと見る ＞</button>
+      </div>
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {events.length === 0 ? (
+          <div className="text-gray-500">イベント情報の準備中です。</div>
+        ) : (
+          events.map((e) => (
+            <Card key={e.id} interactive className="cursor-pointer" onClick={() => router.push(`/events/${e.id}`)}>
+              {e.images?.[0] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={e.images[0]}
+                  alt={e.title}
+                  className="aspect-[4/3] w-full object-cover rounded-t-2xl bg-neutralLight"
+                />
+              ) : (
+                <div className="aspect-[4/3] w-full bg-neutralLight rounded-t-2xl overflow-hidden" />
+              )}
+              <CardContent>
+                <div className="text-lg font-bold">{e.title}</div>
+                <div className="text-gray-500 text-sm mt-1">{e.city} ・ {formatEventDate(e)}</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {e.tags?.slice(0, 4).map((t) => (
+                    <Badge key={t} label={t} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

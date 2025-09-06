@@ -43,6 +43,12 @@ export default function SearchPage() {
   const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
   const [sortMode, setSortMode] = useState<'default' | 'distance' | 'rating'>('default');
 
+  // Initialize mode from query (e.g., /search?kind=events)
+  useEffect(() => {
+    const kind = (router.query.kind as string) || '';
+    if (kind === 'events') setMode('events');
+  }, [router.query.kind]);
+
   useEffect(() => {
     const controller = new AbortController();
     async function run() {
