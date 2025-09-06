@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "name": "Sample Events CSV (local)",
+    "type": "csv",
+    "path": "scripts/events-sample.csv"
+  }
+]
+
