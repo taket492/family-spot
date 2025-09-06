@@ -58,6 +58,14 @@ Notes
 - “現在地から近い順” toggles geolocation-based sorting (permission required).
 - Search page includes a toggle between Spots and Events; Events support list/map view and distance sort.
 
+PWA (Add to Home Screen)
+
+- Included: Web App Manifest (`public/manifest.webmanifest`) and Service Worker (`public/sw.js`).
+- Registration: `pages/_app.tsx` registers the SW and links the manifest.
+- Android (Chrome): Visit the site over HTTPS → browser menu → Add to Home screen.
+- iOS (Safari): Share → Add to Home Screen. Uses `apple-mobile-web-app` meta and touch icon.
+- Icons: Manifest currently points to placeholders under `public/images/`. Replace with proper square icons (192×192, 512×512) for best results.
+
 Map legend
 
 - Spot: green pin (`#10b981`)

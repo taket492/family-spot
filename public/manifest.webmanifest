@@ -1,0 +1,23 @@
+{
+  "name": "Shizuoka Family Spots",
+  "short_name": "FamilySpots",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "/images/cmf6ulot60000bh50n3byvv6p.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/cmf6ulp0f0002bh503p71mss4.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
