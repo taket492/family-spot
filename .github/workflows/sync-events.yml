@@ -21,9 +21,12 @@ jobs:
         run: npm ci
       - name: Generate Prisma client
         run: npx prisma generate
+      - name: Migrate schema (deploy)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma migrate deploy
       - name: Run sync script
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           node scripts/sync-events.js || echo "No sources or sync failed; see logs"
-
