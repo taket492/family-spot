@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Example City Open Data (CSV)",
+    "type": "csv",
+    "url": "https://example-city.opendata.local/events.csv"
+  }
+]
+
+// 運用メモ:
+// - 公式のオープンデータ(ライセンスが再利用可: CC BY など)や、
+//   再配布/機械取得が明示許可されたフィードのみを登録。
+// - robots.txt とサイト規約(TOS)を遵守。HTMLスクレイピングは原則NG。
+// - 取得先のクレジットが必要な場合はアプリ内で明示すること。
+// - CSVヘッダ例: title, city, address, venue, lat, lng, startAt, endAt, priceBand, tags, images, url
