@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 const Map = dynamic(() => import('@/components/Map'), { ssr: false });
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
+import { Skeleton } from '@/components/ui/Skeleton';
+import Link from 'next/link';
+import type { GetServerSideProps } from 'next';
+import { safeParseArray } from '@/lib/utils';
 
 type Spot = {
   id: string;
@@ -30,18 +34,29 @@ type EventItem = {
   images: string[];
 };
 
-export default function SearchPage() {
+type SearchProps = {
+  initialQ?: string;
+  initialItems?: Spot[];
+  initialTotal?: number;
+  initialNextOffset?: number | null;
+};
+
+export default function SearchPage({ initialQ, initialItems = [], initialTotal = 0, initialNextOffset = null }: SearchProps) {
   const router = useRouter();
   const q = (router.query.q as string) || '';
   const [mode, setMode] = useState<'spots' | 'events'>('spots');
-  const [items, setItems] = useState<Spot[]>([]);
+  const [items, setItems] = useState<Spot[]>(initialQ === q ? initialItems : []);
   const [events, setEvents] = useState<EventItem[]>([]);
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState(initialQ === q ? initialTotal : 0);
   const [tab, setTab] = useState<'list' | 'map'>('list');
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [locating, setLocating] = useState(false);
   const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
   const [sortMode, setSortMode] = useState<'default' | 'distance' | 'rating'>('default');
+  const [info, setInfo] = useState<string | null>(null);
+  const usedInitial = useRef(false);
+  const [nextOffset, setNextOffset] = useState<number | null>(initialQ === q ? initialNextOffset : null);
 
   // Events search feature temporarily disabled: always use 'spots'
 
@@ -52,11 +67,22 @@ export default function SearchPage() {
       setLoading(true);
       try {
         if (mode === 'spots') {
-          const res = await fetch(`/api/spots?q=${encodeURIComponent(q)}`, { signal: controller.signal });
+          // Serve initial SSR data without refetch
+          if (!usedInitial.current && initialQ === q && initialItems.length) {
+            usedInitial.current = true;
+            setLoading(false);
+            return;
+          }
+          const params = new URLSearchParams();
+          params.set('q', q);
+          params.set('limit', '20');
+          params.set('offset', '0');
+          const res = await fetch(`/api/spots?${params.toString()}`, { signal: controller.signal });
           const data = await res.json();
           const arr = Array.isArray(data) ? data : data.items;
           setItems(arr || []);
           setTotal(Array.isArray(data) ? arr.length : data.total || arr.length);
+          setNextOffset(data.nextOffset ?? null);
         } else {
           const params = new URLSearchParams();
           params.set('q', q || '');
@@ -151,7 +177,7 @@ export default function SearchPage() {
                 return;
               }
               if (!navigator.geolocation) {
-                alert('位置情報が利用できません');
+                setInfo('位置情報が利用できません（ブラウザ設定をご確認ください）');
                 return;
               }
               setLocating(true);
@@ -160,9 +186,10 @@ export default function SearchPage() {
                   setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
                   setSortMode('distance');
                   setLocating(false);
+                  setInfo(null);
                 },
                 () => {
-                  alert('現在地を取得できませんでした');
+                  setInfo('現在地を取得できませんでした');
                   setLocating(false);
                 },
                 { enableHighAccuracy: true, maximumAge: 60_000 }
@@ -175,7 +202,14 @@ export default function SearchPage() {
           >評価が高い順</Button>
         </div>
       </div>
-      <p className="text-gray-500 mt-2">検索結果: {loading ? '読み込み中…' : `${total}件`}</p>
+      <p className="text-gray-500 mt-2" aria-live="polite">検索結果: {loading ? '読み込み中…' : `${total}件`}</p>
+      {info ? (
+        <div className="mt-2 text-sm text-gray-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+          {info}
+        </div>
+      ) : sortMode !== 'distance' && !geo ? (
+        <div className="mt-2 text-sm text-gray-500">現在地の許可で「近い順」が使えます</div>
+      ) : null}
       <div className="flex gap-2 mt-2">
         <Button variant={'primary'} disabled>スポット</Button>
         <div className="flex-1" />
@@ -184,11 +218,43 @@ export default function SearchPage() {
       </div>
       {tab === 'list' ? (
         <div className="mt-3">
-          {
+          {loading ? (
+            <div>
+              {[...Array(4)].map((_, i) => (
+                <Card key={i} className="my-3">
+                  <CardContent>
+                    <Skeleton className="h-5 w-1/2" />
+                    <Skeleton className="h-4 w-32 mt-2" />
+                    <div className="flex gap-2 mt-3">
+                      <Skeleton className="h-6 w-16 rounded-full" />
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : sortedSpots.length === 0 ? (
+            <div className="my-6 text-center">
+              <div className="text-gray-600">条件に合うスポットが見つかりませんでした</div>
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                {['屋内', '授乳室', '雨の日OK', 'ベビーカー', '駐車場あり'].map((t) => (
+                  <button
+                    key={t}
+                    className="px-4 py-2 rounded-full border text-sm bg-white border-gray-300 text-gray-700"
+                    onClick={() => router.push(`/search?q=${encodeURIComponent(t)}`)}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
             sortedSpots.map((s) => {
               const distance = geo ? Math.round(haversine(geo, { lat: s.lat, lng: s.lng }) / 100) / 10 : null; // km
               return (
-                <Card key={s.id} className="my-3">
+                <Link key={s.id} href={`/spots/${s.id}`} className="block">
+                  <Card className="my-3 cursor-pointer hover:shadow-md transition-shadow">
                   <CardContent>
                     <div className="flex justify-between gap-3">
                       <div className="min-w-0">
@@ -201,20 +267,46 @@ export default function SearchPage() {
                         </div>
                         {distance != null && <div className="text-gray-500 text-xs mt-1">約 {distance} km</div>}
                       </div>
-                      <div className="shrink-0 self-center">
-                        <Button onClick={() => router.push(`/spots/${s.id}`)}>詳細</Button>
-                      </div>
+                      <div className="shrink-0 self-center text-primary font-medium">詳細</div>
                     </div>
                   </CardContent>
-                </Card>
+                  </Card>
+                </Link>
               );
             })
-          }
+          )}
+          {/* Load more */}
+          {nextOffset != null && (
+            <div className="my-4 flex justify-center">
+              <Button
+                variant="secondary"
+                disabled={loadingMore}
+                onClick={async () => {
+                  if (loadingMore || nextOffset == null) return;
+                  setLoadingMore(true);
+                  try {
+                    const params = new URLSearchParams();
+                    params.set('q', q);
+                    params.set('limit', '20');
+                    params.set('offset', String(nextOffset));
+                    const res = await fetch(`/api/spots?${params.toString()}`);
+                    const data = await res.json();
+                    const arr: Spot[] = Array.isArray(data) ? data : data.items || [];
+                    setItems((prev) => [...prev, ...arr]);
+                    setTotal(data.total ?? (arr.length + items.length));
+                    setNextOffset(data.nextOffset ?? null);
+                  } finally {
+                    setLoadingMore(false);
+                  }
+                }}
+              >{loadingMore ? '読み込み中…' : 'もっと見る'}</Button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="mt-3">
           <Map
-            spots={items.map(({ id, name, lat, lng, type }) => ({ id, name, lat, lng, type }))}
+            spots={mapSpots}
             onSelect={(id) => {
               router.push(`/spots/${id}`);
             }}
@@ -224,3 +316,31 @@ export default function SearchPage() {
     </div>
   );
 }
+
+export const getServerSideProps: GetServerSideProps<SearchProps> = async (ctx) => {
+  const q = (ctx.query.q as string) || '';
+  try {
+    const { prisma } = await import('@/lib/db');
+    const tokens = q.split(/\s+/).filter(Boolean);
+    const tagConds = tokens.map((t) => ({ tags: { contains: t } }));
+    const where: any = q
+      ? { OR: [{ name: { contains: q } }, { city: { contains: q } }, ...tagConds] }
+      : {};
+    const [raw, total] = await Promise.all([
+      prisma.spot.findMany({ where, orderBy: { updatedAt: 'desc' }, take: 20, skip: 0 }),
+      prisma.spot.count({ where }),
+    ]);
+    const items = raw.map((s: any) => ({
+      ...s,
+      tags: safeParseArray(s.tags),
+      images: safeParseArray(s.images),
+    }));
+    // Set short cache headers to allow CDN caching of SSR response
+    ctx.res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=300');
+    const nextOffset = items.length < total ? items.length : null;
+    return { props: { initialQ: q, initialItems: items, initialTotal: total, initialNextOffset: nextOffset } };
+  } catch {
+    return { props: { initialQ: q, initialItems: [], initialTotal: 0, initialNextOffset: null } };
+  }
+};
+

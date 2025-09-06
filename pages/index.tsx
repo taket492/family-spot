@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
+import Image from 'next/image';
+import Link from 'next/link';
+import type { GetServerSideProps } from 'next';
+import { safeParseArray } from '@/lib/utils';
 
 type Spot = {
   id: string;
@@ -24,10 +28,11 @@ type EventItem = {
   images: string[];
 };
 
-export default function Home() {
+type HomeProps = { featured: Spot[] };
+
+export default function Home({ featured }: HomeProps) {
   const router = useRouter();
   const [q, setQ] = useState('');
-  const [featured, setFeatured] = useState<Spot[]>([]);
   // Feature flags: hide events/web search sections for now
   const SHOW_HOME_EVENTS = false;
   const SHOW_HOME_WEB = false;
@@ -41,21 +46,7 @@ export default function Home() {
     router.push(`/search?${params.toString()}`);
   }
 
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      try {
-        const res = await fetch('/api/spots', { signal: controller.signal });
-        const data = await res.json();
-        const items: Spot[] = Array.isArray(data) ? data : data.items || [];
-        setFeatured(items.slice(0, 4));
-      } catch (_) {
-        // ignore
-      }
-    }
-    load();
-    return () => controller.abort();
-  }, []);
+  // featured is provided server-side for faster TTFB
 
   useEffect(() => {
     if (!SHOW_HOME_EVENTS) return;
@@ -187,19 +178,24 @@ export default function Home() {
       {/* Featured */}
       <div className="mt-8 flex items-baseline justify-between">
         <h2 className="text-2xl font-bold text-primary">注目のスポット</h2>
-        <button className="text-secondary font-medium" onClick={() => router.push('/search')}>もっと見る ＞</button>
+        <Link className="text-secondary font-medium" href="/search">もっと見る ＞</Link>
       </div>
 
       <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
         {featured.map((s) => (
-          <Card key={s.id} interactive className="cursor-pointer" onClick={() => router.push(`/spots/${s.id}`)}>
+          <Link key={s.id} href={`/spots/${s.id}`} className="block">
+            <Card interactive className="cursor-pointer">
             {s.images?.[0] ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={s.images[0]}
-                alt={s.name}
-                className="aspect-[4/3] w-full object-cover rounded-t-2xl bg-neutralLight"
-              />
+              <div className="relative aspect-[4/3] w-full rounded-t-2xl overflow-hidden bg-neutralLight">
+                <Image
+                  src={s.images[0]}
+                  alt={s.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover"
+                  priority={false}
+                />
+              </div>
             ) : (
               <div className="aspect-[4/3] w-full bg-neutralLight rounded-t-2xl overflow-hidden" />
             )}
@@ -211,7 +207,8 @@ export default function Home() {
                 ))}
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </Link>
         ))}
       </div>
 
@@ -283,3 +280,22 @@ export default function Home() {
     </div>
   );
 }
+
+export const getServerSideProps: GetServerSideProps<HomeProps> = async ({ res }) => {
+  try {
+    // Fetch top 4 featured spots server-side to avoid client roundtrip
+    const { prisma } = await import('@/lib/db');
+    const raw = await prisma.spot.findMany({ orderBy: { updatedAt: 'desc' }, take: 4 });
+    const featured = raw.map((s: any) => ({
+      ...s,
+      tags: safeParseArray(s.tags),
+      images: safeParseArray(s.images),
+    }));
+    // CDN/Browser caching hint (can be tuned or removed during dynamic content updates)
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+    return { props: { featured } };
+  } catch {
+    return { props: { featured: [] } };
+  }
+};
+

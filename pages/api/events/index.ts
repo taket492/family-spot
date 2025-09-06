@@ -1,14 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/db';
+import { safeParseArray } from '@/lib/utils';
 
-function safeParseArray(json: unknown): string[] {
-  try {
-    const v = JSON.parse(String(json ?? '[]'));
-    return Array.isArray(v) ? v.map(String) : [];
-  } catch {
-    return [];
-  }
-}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
