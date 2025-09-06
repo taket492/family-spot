@@ -13,16 +13,9 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: google-github-actions/release-please-action@v4
+      - uses: googleapis/release-please-action@v4
         with:
           release-type: node
-          package-name: family-spot
-          changelog-types: |-
-            [
-              {"type":"feat","section":"Features","hidden":false},
-              {"type":"fix","section":"Bug Fixes","hidden":false},
-              {"type":"docs","section":"Documentation","hidden":false},
-              {"type":"chore","section":"Chores","hidden":true},
-              {"type":"refactor","section":"Refactoring","hidden":false},
-              {"type":"perf","section":"Performance","hidden":false}
-            ]
+          config-file: .release-please-config.json
+          # NOTE: Org setting blocks PRs by Actions. Enable it, or set the next line to 'true' to bypass PR creation.
+          skip-github-pull-request: false
