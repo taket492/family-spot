@@ -29,6 +29,7 @@ export default function Home() {
   const [q, setQ] = useState('');
   const [featured, setFeatured] = useState<Spot[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [webItems, setWebItems] = useState<{ title: string; link: string; snippet?: string; source?: string }[]>([]);
 
   function runSearch(query?: string) {
     const qq = query ?? q;
@@ -76,6 +77,23 @@ export default function Home() {
     if (end) return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
     return start.toLocaleString();
   }
+
+  useEffect(() => {
+    const ctl = new AbortController();
+    async function loadWeb() {
+      try {
+        const q = encodeURIComponent('静岡 イベント 今週末');
+        const res = await fetch(`/api/websearch?q=${q}&count=5`, { signal: ctl.signal });
+        if (!res.ok) return;
+        const data = await res.json();
+        setWebItems(data.items || []);
+      } catch (_) {
+        // ignore
+      }
+    }
+    loadWeb();
+    return () => ctl.abort();
+  }, []);
 
   return (
     <div className="page-container py-6">
@@ -222,6 +240,29 @@ export default function Home() {
                     <Badge key={t} label={t} />
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Web search (fallback/overview) */}
+      <div className="mt-10 flex items-baseline justify-between">
+        <h2 className="text-2xl font-bold text-primary">Webのイベント情報（静岡・今週末）</h2>
+        <a className="text-secondary font-medium" href="https://www.google.com/search?q=%E9%9D%99%E5%B2%A1+%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88+%E4%BB%8A%E9%80%B1%E6%9C%AB" target="_blank" rel="noreferrer">Googleで見る ＞</a>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-3">
+        {webItems.length === 0 ? (
+          <div className="text-gray-500">検索結果の取得準備中です。</div>
+        ) : (
+          webItems.map((w) => (
+            <Card key={w.link} className="">
+              <CardContent>
+                <a href={w.link} target="_blank" rel="noreferrer" className="font-semibold text-primary underline">
+                  {w.title}
+                </a>
+                {w.source && <div className="text-gray-500 text-xs mt-1">{w.source}</div>}
+                {w.snippet && <div className="text-gray-700 text-sm mt-1">{w.snippet}</div>}
               </CardContent>
             </Card>
           ))
