@@ -31,6 +31,13 @@ jobs:
           else
             echo "DATABASE_URL is set (value hidden)"
           fi
+      - name: Check sources config presence
+        run: |
+          if [ ! -f scripts/event-sources.json ]; then
+            echo "Warning: scripts/event-sources.json not found. Sync will likely skip." >&2
+          else
+            echo "Found scripts/event-sources.json" && ls -l scripts/event-sources.json
+          fi
       - name: Migrate schema (deploy)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -40,3 +47,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           node scripts/sync-events.js || echo "No sources or sync failed; see logs"
+      - name: Verify events count (now..+14d)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          node scripts/check-events-count.js
