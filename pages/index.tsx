@@ -28,6 +28,9 @@ export default function Home() {
   const router = useRouter();
   const [q, setQ] = useState('');
   const [featured, setFeatured] = useState<Spot[]>([]);
+  // Feature flags: hide events/web search sections for now
+  const SHOW_HOME_EVENTS = false;
+  const SHOW_HOME_WEB = false;
   const [events, setEvents] = useState<EventItem[]>([]);
   const [webItems, setWebItems] = useState<{ title: string; link: string; snippet?: string; source?: string }[]>([]);
 
@@ -55,10 +58,10 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!SHOW_HOME_EVENTS) return;
     const ctl = new AbortController();
     async function loadEvents() {
       try {
-        // APIはデフォルトで「今日〜14日」を返すのでパラメータ不要
         const res = await fetch('/api/events', { signal: ctl.signal });
         const data = await res.json();
         const items: EventItem[] = Array.isArray(data) ? data : data.items || [];
@@ -69,7 +72,7 @@ export default function Home() {
     }
     loadEvents();
     return () => ctl.abort();
-  }, []);
+  }, [SHOW_HOME_EVENTS]);
 
   function formatEventDate(e: EventItem) {
     const start = new Date(e.startAt);
@@ -79,6 +82,7 @@ export default function Home() {
   }
 
   useEffect(() => {
+    if (!SHOW_HOME_WEB) return;
     const ctl = new AbortController();
     async function loadWeb() {
       try {
@@ -93,7 +97,7 @@ export default function Home() {
     }
     loadWeb();
     return () => ctl.abort();
-  }, []);
+  }, [SHOW_HOME_WEB]);
 
   return (
     <div className="page-container py-6">
@@ -211,63 +215,71 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Events */}
-      <div className="mt-10 flex items-baseline justify-between">
-        <h2 className="text-2xl font-bold text-primary">開催中・これからのイベント</h2>
-        <button className="text-secondary font-medium" onClick={() => router.push('/search?kind=events')}>もっと見る ＞</button>
-      </div>
-      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {events.length === 0 ? (
-          <div className="text-gray-500">イベント情報の準備中です。</div>
-        ) : (
-          events.map((e) => (
-            <Card key={e.id} interactive className="cursor-pointer" onClick={() => router.push(`/events/${e.id}`)}>
-              {e.images?.[0] ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={e.images[0]}
-                  alt={e.title}
-                  className="aspect-[4/3] w-full object-cover rounded-t-2xl bg-neutralLight"
-                />
-              ) : (
-                <div className="aspect-[4/3] w-full bg-neutralLight rounded-t-2xl overflow-hidden" />
-              )}
-              <CardContent>
-                <div className="text-lg font-bold">{e.title}</div>
-                <div className="text-gray-500 text-sm mt-1">{e.city} ・ {formatEventDate(e)}</div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {e.tags?.slice(0, 4).map((t) => (
-                    <Badge key={t} label={t} />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+      {/* Events (hidden) */}
+      {SHOW_HOME_EVENTS && (
+        <>
+          <div className="mt-10 flex items-baseline justify-between">
+            <h2 className="text-2xl font-bold text-primary">開催中・これからのイベント</h2>
+            <button className="text-secondary font-medium" onClick={() => router.push('/search?kind=events')}>もっと見る ＞</button>
+          </div>
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {events.length === 0 ? (
+              <div className="text-gray-500">イベント情報の準備中です。</div>
+            ) : (
+              events.map((e) => (
+                <Card key={e.id} interactive className="cursor-pointer" onClick={() => router.push(`/events/${e.id}`)}>
+                  {e.images?.[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={e.images[0]}
+                      alt={e.title}
+                      className="aspect-[4/3] w-full object-cover rounded-t-2xl bg-neutralLight"
+                    />
+                  ) : (
+                    <div className="aspect-[4/3] w-full bg-neutralLight rounded-t-2xl overflow-hidden" />
+                  )}
+                  <CardContent>
+                    <div className="text-lg font-bold">{e.title}</div>
+                    <div className="text-gray-500 text-sm mt-1">{e.city} ・ {formatEventDate(e)}</div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {e.tags?.slice(0, 4).map((t) => (
+                        <Badge key={t} label={t} />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </>
+      )}
 
-      {/* Web search (fallback/overview) */}
-      <div className="mt-10 flex items-baseline justify-between">
-        <h2 className="text-2xl font-bold text-primary">Webのイベント情報（静岡・今週末）</h2>
-        <a className="text-secondary font-medium" href="https://www.google.com/search?q=%E9%9D%99%E5%B2%A1+%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88+%E4%BB%8A%E9%80%B1%E6%9C%AB" target="_blank" rel="noreferrer">Googleで見る ＞</a>
-      </div>
-      <div className="mt-3 grid grid-cols-1 gap-3">
-        {webItems.length === 0 ? (
-          <div className="text-gray-500">検索結果の取得準備中です。</div>
-        ) : (
-          webItems.map((w) => (
-            <Card key={w.link} className="">
-              <CardContent>
-                <a href={w.link} target="_blank" rel="noreferrer" className="font-semibold text-primary underline">
-                  {w.title}
-                </a>
-                {w.source && <div className="text-gray-500 text-xs mt-1">{w.source}</div>}
-                {w.snippet && <div className="text-gray-700 text-sm mt-1">{w.snippet}</div>}
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+      {/* Web search (hidden) */}
+      {SHOW_HOME_WEB && (
+        <>
+          <div className="mt-10 flex items-baseline justify-between">
+            <h2 className="text-2xl font-bold text-primary">Webのイベント情報（静岡・今週末）</h2>
+            <a className="text-secondary font-medium" href="https://www.google.com/search?q=%E9%9D%99%E5%B2%A1+%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88+%E4%BB%8A%E9%80%B1%E6%9C%AB" target="_blank" rel="noreferrer">Googleで見る ＞</a>
+          </div>
+          <div className="mt-3 grid grid-cols-1 gap-3">
+            {webItems.length === 0 ? (
+              <div className="text-gray-500">検索結果の取得準備中です。</div>
+            ) : (
+              webItems.map((w) => (
+                <Card key={w.link} className="">
+                  <CardContent>
+                    <a href={w.link} target="_blank" rel="noreferrer" className="font-semibold text-primary underline">
+                      {w.title}
+                    </a>
+                    {w.source && <div className="text-gray-500 text-xs mt-1">{w.source}</div>}
+                    {w.snippet && <div className="text-gray-700 text-sm mt-1">{w.snippet}</div>}
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

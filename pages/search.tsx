@@ -43,11 +43,7 @@ export default function SearchPage() {
   const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
   const [sortMode, setSortMode] = useState<'default' | 'distance' | 'rating'>('default');
 
-  // Initialize mode from query (e.g., /search?kind=events)
-  useEffect(() => {
-    const kind = (router.query.kind as string) || '';
-    if (kind === 'events') setMode('events');
-  }, [router.query.kind]);
+  // Events search feature temporarily disabled: always use 'spots'
 
   useEffect(() => {
     const controller = new AbortController();
@@ -181,15 +177,14 @@ export default function SearchPage() {
       </div>
       <p className="text-gray-500 mt-2">検索結果: {loading ? '読み込み中…' : `${total}件`}</p>
       <div className="flex gap-2 mt-2">
-        <Button variant={mode === 'spots' ? 'primary' : 'secondary'} onClick={() => setMode('spots')}>スポット</Button>
-        <Button variant={mode === 'events' ? 'primary' : 'secondary'} onClick={() => setMode('events')}>イベント</Button>
+        <Button variant={'primary'} disabled>スポット</Button>
         <div className="flex-1" />
         <Button variant={tab === 'list' ? 'primary' : 'secondary'} onClick={() => setTab('list')}>リスト</Button>
         <Button variant={tab === 'map' ? 'primary' : 'secondary'} onClick={() => setTab('map')}>地図</Button>
       </div>
       {tab === 'list' ? (
         <div className="mt-3">
-          {mode === 'spots' ? (
+          {
             sortedSpots.map((s) => {
               const distance = geo ? Math.round(haversine(geo, { lat: s.lat, lng: s.lng }) / 100) / 10 : null; // km
               return (
@@ -214,45 +209,14 @@ export default function SearchPage() {
                 </Card>
               );
             })
-          ) : (
-            sortedEvents.map((e) => {
-              const distance = geo ? Math.round(haversine(geo, { lat: e.lat, lng: e.lng }) / 100) / 10 : null; // km
-              const start = new Date(e.startAt);
-              const end = e.endAt ? new Date(e.endAt) : null;
-              const dateStr = end
-                ? `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`
-                : start.toLocaleString();
-              return (
-                <Card key={e.id} className="my-3">
-                  <CardContent>
-                    <div className="flex justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="font-semibold truncate">{e.title}</div>
-                        <div className="text-gray-500 text-sm">{e.city} ・ {dateStr}</div>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {e.tags?.slice(0, 6).map((t) => (
-                            <Badge key={t} label={t} />
-                          ))}
-                        </div>
-                        {distance != null && <div className="text-gray-500 text-xs mt-1">約 {distance} km</div>}
-                      </div>
-                      <div className="shrink-0 self-center">
-                        <Button onClick={() => router.push(`/events/${e.id}`)}>詳細</Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
+          }
         </div>
       ) : (
         <div className="mt-3">
           <Map
-            spots={mapSpots}
+            spots={items.map(({ id, name, lat, lng, type }) => ({ id, name, lat, lng, type }))}
             onSelect={(id) => {
-              if (mode === 'spots') router.push(`/spots/${id}`);
-              else router.push(`/events/${id}`);
+              router.push(`/spots/${id}`);
             }}
           />
         </div>
