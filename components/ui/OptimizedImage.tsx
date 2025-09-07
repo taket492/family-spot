@@ -66,23 +66,44 @@ export function OptimizedImage({
     );
   }
 
+  // When using `fill`, rely on the parent container to be `relative` and sized.
+  if (fill) {
+    return (
+      <>
+        <Image
+          src={imgSrc}
+          alt={alt}
+          fill
+          sizes={sizes}
+          className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+          priority={priority}
+          onError={handleError}
+          onLoadingComplete={handleLoadingComplete}
+        />
+        {isLoading && (
+          <div className={`absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center ${className}`}>
+            <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+            </svg>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // Non-fill usage keeps a wrapper for layout.
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
       <Image
         src={imgSrc}
         alt={alt}
-        fill={fill}
-        sizes={sizes}
-        className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+        className={`${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
         priority={priority}
         onError={handleError}
         onLoadingComplete={handleLoadingComplete}
       />
-      {/* Loading skeleton */}
       {isLoading && (
-        <div 
-          className={`absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center ${className}`}
-        >
+        <div className={`absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center`}>
           <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
           </svg>
