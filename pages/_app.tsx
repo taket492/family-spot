@@ -32,7 +32,13 @@ export default function App({ Component, pageProps }: AppProps) {
     <div className={`${noto.variable} ${inter.variable}`}>
       <Head>
         <meta name="theme-color" content="#4CAF50" />
-        <link rel="manifest" href="/manifest.webmanifest" />
+        {/* Include credentials so manifest loads on protected preview URLs */}
+        <link rel="manifest" href="/manifest.webmanifest" crossOrigin="use-credentials" />
+        {/* Performance hints for map tiles */}
+        <link rel="preconnect" href="https://tile.openstreetmap.org" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="//tile.openstreetmap.org" />
+        <link rel="preconnect" href="https://api.maptiler.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="//api.maptiler.com" />
         {/* iOS PWA meta */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
