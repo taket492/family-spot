@@ -9,22 +9,28 @@ generator client {
 }
 
 model Spot {
-  id        String   @id @default(cuid())
-  type      String
-  name      String
-  city      String
-  address   String?
-  lat       Float
-  lng       Float
-  phone     String?
-  tags      String   // JSON string of string[]
-  openHours String?
-  priceBand String?
-  images    String   // JSON string of string[]
-  rating    Float    @default(0)
-  reviews   Review[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String              @id @default(cuid())
+  type         String
+  name         String
+  city         String
+  address      String?
+  lat          Float
+  lng          Float
+  phone        String?
+  tags         String              // JSON string of string[]
+  openHours    String?
+  priceBand    String?
+  images       String              // JSON string of string[]
+  rating       Float               @default(0)
+  reviews      Review[]
+  searchVector Unsupported("tsvector")?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([name])
+  @@index([city])
+  @@index([city, type])
+  @@index([lat, lng])
 }
 
 model Review {
@@ -39,25 +45,27 @@ model Review {
 }
 
 model Event {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  city        String
-  venue       String?
-  address     String?
-  lat         Float
-  lng         Float
-  startAt     DateTime
-  endAt       DateTime?
-  priceBand   String?
-  tags        String   // JSON string of string[]
-  images      String   // JSON string of string[]
-  source      String?
-  url         String?
-  status      String   @default("public")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String              @id @default(cuid())
+  title        String
+  description  String?
+  city         String
+  venue        String?
+  address      String?
+  lat          Float
+  lng          Float
+  startAt      DateTime
+  endAt        DateTime?
+  priceBand    String?
+  tags         String              // JSON string of string[]
+  images       String              // JSON string of string[]
+  source       String?
+  url          String?
+  status       String              @default("public")
+  searchVector Unsupported("tsvector")?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   @@index([startAt])
   @@index([city])
+  @@index([title])
 }

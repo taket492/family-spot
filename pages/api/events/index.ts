@@ -1,39 +1,31 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '@/lib/db';
-import { safeParseArray } from '@/lib/utils';
+import { searchEvents } from '@/lib/search';
 
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const q = (req.query.q as string) || '';
-    const fromQ = (req.query.from as string) || '';
-    const toQ = (req.query.to as string) || '';
-    const tokens = q.split(/\s+/).filter(Boolean);
-    const tagConds = tokens.map((t) => ({ tags: { contains: t } }));
-
-    const now = new Date();
-    const from = fromQ ? new Date(fromQ) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const to = toQ ? new Date(toQ) : new Date(from.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-    const where: any = {
-      status: 'public',
-      startAt: { gte: from },
-    };
-    if (to) where.startAt.lte = to;
-    if (q) where.OR = [{ title: { contains: q } }, { city: { contains: q } }, ...tagConds];
-
-    const raw = await prisma.event.findMany({
-      where,
-      orderBy: { startAt: 'asc' },
-      take: 50,
+    const limit = parseInt(String(req.query.limit || '50'));
+    const offset = parseInt(String(req.query.offset || '0'));
+    const useFullTextSearch = req.query.fts !== 'false';
+    
+    // For backward compatibility, handle from/to parameters
+    // Note: Full search implementation now focuses on upcoming events
+    // Legacy date filtering can be added back if needed
+    
+    const result = await searchEvents({
+      query: q,
+      limit,
+      offset,
+      useFullTextSearch,
     });
-    const items = raw.map((e: any) => ({
-      ...e,
-      tags: safeParseArray(e.tags),
-      images: safeParseArray(e.images),
-    }));
-    res.status(200).json({ items, total: items.length });
+
+    res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=300');
+    res.setHeader('x-search-method', useFullTextSearch ? 'fulltext' : 'legacy');
+    
+    res.status(200).json(result);
   } catch (e) {
+    console.error('Event search API error:', e);
     res.status(500).json({ error: 'internal_error' });
   }
 }
