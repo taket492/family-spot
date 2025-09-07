@@ -103,6 +103,27 @@ Deploy to Vercel
   5. Build Command: `npm run prisma:push && next build` (or run db push once locally and just `next build`)
   6. Deploy; the API routes will connect to Neon
 
+Operations (Performance & PWA)
+
+- Search performance:
+  - SSR uses Postgres full‑text search via `lib/search.searchSpots` for faster first paint.
+  - Client re‑search calls the API directly and updates the URL with shallow routing to avoid SSR round‑trips.
+  - Link prefetch is disabled on heavy lists to reduce idle network usage.
+- DB optimization (one‑time indexes):
+  - Recommended: run locally against production DB
+    - Ensure `DATABASE_URL` points to production, then run: `npm run prisma:optimize`
+    - Creates: `pg_trgm` extension, GIN indexes on `Spot/Event` search vectors, trigram indexes on common text fields.
+  - Alternative (temporary admin API route):
+    1) Add an admin route (protected by `ADMIN_OPS_TOKEN`) that runs the same optimization
+    2) Deploy and execute once: `curl -X POST -H "X-Admin-Token: <TOKEN>" https://<domain>/api/admin/optimize-db`
+    3) Remove the route and delete the token, then redeploy
+- PWA on Vercel preview:
+  - Preview Protection can 401 the manifest; link it with `crossOrigin="use-credentials"` and/or bypass these paths:
+    - `/manifest.webmanifest`, `/sw.js`, `/favicon.ico`, `/robots.txt`, `/sitemap.xml`, `/images/*`, `/_next/static/*`
+  - Vercel → Project Settings → Protection → Bypass for selected paths
+- Favicon:
+  - Uses `/favicon.svg`; `/favicon.ico` requests are redirected to the SVG to avoid 404. Add a real `.ico` if required by clients.
+
 Import Events (CSV)
 
 - Prepare a CSV with headers like: `title,city,address,venue,lat,lng,startAt,endAt,tags,images,url`
