@@ -35,6 +35,32 @@ export async function searchSpots(options: SearchOptions): Promise<SearchResult<
     return { items, total, nextOffset };
   }
 
+  // Fast path: "レストランを特徴から"（座敷/個室/ベビーカー可/その他）用の絞り込み
+  // 検索トップ（レストラン）のチップ検索はこの分岐で処理してフルテキスト検索を回避
+  const FEATURE_TAGS = ['座敷', '個室', 'ベビーカー可', 'その他'];
+  const tokens = query.trim().split(/\s+/).filter(Boolean);
+  const allTokensAreFeature = tokens.length > 0 && tokens.every(t => FEATURE_TAGS.includes(t));
+  if (allTokensAreFeature) {
+    const where: any = {
+      type: 'restaurant',
+      AND: tokens.map(t => ({ tags: { contains: t } })),
+    };
+
+    const [raw, total] = await Promise.all([
+      prisma.spot.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        take: boundedLimit,
+        skip: boundedOffset,
+      }),
+      prisma.spot.count({ where }),
+    ]);
+
+    const items = raw.map(transformSpot);
+    const nextOffset = boundedOffset + items.length < total ? boundedOffset + items.length : null;
+    return { items, total, nextOffset };
+  }
+
   if (useFullTextSearch) {
     return searchSpotsWithFullText(query, boundedLimit, boundedOffset);
   } else {
