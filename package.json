@@ -10,6 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
+    "prisma:optimize": "node scripts/optimize-db.js",
     "seed": "node scripts/seed.js",
     "import:csv": "node scripts/import-csv.js",
     "import:events:csv": "node scripts/import-events-csv.js",
