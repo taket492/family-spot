@@ -9,15 +9,26 @@ async function hasRegClass(name) {
   return rows && rows[0] && rows[0].oid !== null;
 }
 
+async function detectSearchVectorColumn(table) {
+  const rows = await prisma.$queryRawUnsafe(
+    `SELECT column_name FROM information_schema.columns WHERE table_name = $1 AND column_name IN ('search_vector', 'searchVector')`,
+    table
+  );
+  return rows?.[0]?.column_name || 'search_vector';
+}
+
 async function run() {
   try {
     console.log('[optimize-db] Ensuring pg_trgm extension');
     await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
 
+    const spotVecCol = await detectSearchVectorColumn('Spot');
+    const eventVecCol = await detectSearchVectorColumn('Event');
+
     // GIN index on tsvector columns used by full-text search
     const ginIdx = [
-      { name: 'spot_search_vec_idx', sql: 'CREATE INDEX CONCURRENTLY IF NOT EXISTS spot_search_vec_idx ON "Spot" USING GIN ("search_vector")' },
-      { name: 'event_search_vec_idx', sql: 'CREATE INDEX CONCURRENTLY IF NOT EXISTS event_search_vec_idx ON "Event" USING GIN ("search_vector")' },
+      { name: 'spot_search_vec_idx', sql: `CREATE INDEX CONCURRENTLY IF NOT EXISTS spot_search_vec_idx ON "Spot" USING GIN ("${spotVecCol}")` },
+      { name: 'event_search_vec_idx', sql: `CREATE INDEX CONCURRENTLY IF NOT EXISTS event_search_vec_idx ON "Event" USING GIN ("${eventVecCol}")` },
     ];
 
     for (const idx of ginIdx) {
@@ -59,4 +70,3 @@ async function run() {
 }
 
 run();
-
