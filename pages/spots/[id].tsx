@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
-import Image from 'next/image';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
 
 type Review = { id: string; stars: number; childAge: string; text: string; createdAt: string };
 type Spot = {
@@ -73,20 +73,27 @@ export default function SpotDetail() {
       {spot && (
         <div className="mt-4">
           {/* Image or placeholder */}
-          {spot.images?.[0] ? (
-            <div className="relative rounded-2xl overflow-hidden bg-neutralLight aspect-[4/3]">
-              <Image
+          <div className="relative rounded-2xl overflow-hidden bg-neutralLight aspect-[4/3]">
+            {spot.images?.[0] ? (
+              <OptimizedImage
                 src={spot.images[0]}
                 alt={spot.name}
                 fill
                 sizes="100vw"
-                className="object-cover"
-                priority={false}
+                className="object-cover rounded-2xl"
+                priority={true}
               />
-            </div>
-          ) : (
-            <div className="rounded-2xl overflow-hidden bg-neutralLight aspect-[4/3]"></div>
-          )}
+            ) : (
+              <div className="aspect-[4/3] w-full bg-gray-200 rounded-2xl flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <svg className="mx-auto h-12 w-12 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                  </svg>
+                  <span className="text-sm">画像がありません</span>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Title + rating */}
           <div className="mt-4">

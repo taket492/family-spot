@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Sample Spots CSV (local)",
+    "type": "csv",
+    "path": "scripts/spots-sample.csv"
+  }
+]
+

@@ -1,0 +1,50 @@
+name: Sync Spots (manual)
+
+on:
+  workflow_dispatch: {}
+  # Uncomment to run on a schedule (e.g., weekly at 03:00 JST)
+  # schedule:
+  #   - cron: '0 18 * * 0' # 03:00 JST Sunday (18:00 UTC Saturday)
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Generate Prisma client
+        run: npx prisma generate
+      - name: Check DATABASE_URL is set
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL is NOT set in Secrets" >&2
+            exit 1
+          else
+            echo "DATABASE_URL is set (value hidden)"
+          fi
+      - name: Check sources config presence
+        run: |
+          if [ ! -f scripts/spot-sources.json ]; then
+            echo "Warning: scripts/spot-sources.json not found. Sync will likely skip." >&2
+          else
+            echo "Found scripts/spot-sources.json" && ls -l scripts/spot-sources.json
+          fi
+      - name: Migrate schema (deploy)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma migrate deploy
+      - name: Run sync script
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          node scripts/sync-spots.js || echo "No sources or sync failed; see logs"
+

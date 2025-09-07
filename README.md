@@ -45,6 +45,22 @@ Endpoints
 - GET /api/spots/:id → Spot with reviews
 - POST /api/reviews { spotId, name, stars(1..5), age, text }
 
+Import Spots (CSV)
+
+- Prepare a CSV with headers like: `type,name,city,address,lat,lng,phone,tags,openHours,priceBand,images`
+- Dry run: `npm run import:csv -- ./path/to/spots.csv --dry-run`
+- Import: `npm run import:csv -- ./path/to/spots.csv`
+
+Enrich From Names → Register
+
+- 前提: 取得元は公式API（Google Places または Nominatim）。スクレイピングは不使用。
+- 入力: お店名のリスト（CSV/JSON）。CSVヘッダ例: `name,city,type,tags`
+- Google Places 利用時は `GOOGLE_API_KEY` を `.env` に設定。
+- 実行（乾燥走行）: `npm run enrich:spots -- ./path/to/names.csv --dry-run`
+- CSV出力: `npm run enrich:spots -- ./path/to/names.csv --out ./out.csv`
+- DB登録（自動投入）: `npm run enrich:spots -- ./path/to/names.csv`
+- プロバイダ選択: `--provider=google|nominatim`（既定は google）
+
 Events API
 
 - GET /api/events?q=三島&from=ISO8601&to=ISO8601 → { items: Event[], total }
@@ -99,6 +115,13 @@ Auto Sync (GitHub Actions)
   `[{ "type": "csv", "url": "https://example.org/events.csv", "name": "City X" }]`
 - Set `DATABASE_URL` secret in GitHub repo
 - Workflow runs daily; respects ToS by only fetching configured public feeds
+
+Auto Sync Spots (manual or scheduled)
+
+- Local/manual: define sources in `scripts/spot-sources.json` (see `scripts/spot-sources.json.example`), then run:
+  - `npm run sync:spots` or `node scripts/sync-spots.js [scripts/spot-sources.json]`
+- Sources support CSV/JSON via `url` (remote) or `path` (local). Fields map like the spot CSV importer.
+- Optional CI: add `DATABASE_URL` secret and trigger the included workflow `Sync Spots` from GitHub Actions (manual dispatch). You can also add a schedule.
 
 Vercel Environment Variables
 

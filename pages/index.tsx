@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
-import Image from 'next/image';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import Link from 'next/link';
 import type { GetServerSideProps } from 'next';
 import { safeParseArray } from '@/lib/utils';
@@ -185,20 +185,24 @@ export default function Home({ featured }: HomeProps) {
         {featured.map((s) => (
           <Link key={s.id} href={`/spots/${s.id}`} className="block">
             <Card interactive className="cursor-pointer">
-            {s.images?.[0] ? (
-              <div className="relative aspect-[4/3] w-full rounded-t-2xl overflow-hidden bg-neutralLight">
-                <Image
+            <div className="relative aspect-[4/3] w-full rounded-t-2xl overflow-hidden bg-neutralLight">
+              {s.images?.[0] ? (
+                <OptimizedImage
                   src={s.images[0]}
                   alt={s.name}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
+                  className="object-cover rounded-t-2xl"
                   priority={false}
                 />
-              </div>
-            ) : (
-              <div className="aspect-[4/3] w-full bg-neutralLight rounded-t-2xl overflow-hidden" />
-            )}
+              ) : (
+                <div className="aspect-[4/3] w-full bg-gray-200 rounded-t-2xl flex items-center justify-center">
+                  <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                  </svg>
+                </div>
+              )}
+            </div>
             <CardContent>
               <div className="text-xl font-bold">{s.name}</div>
               <div className="mt-2 flex flex-wrap gap-2">

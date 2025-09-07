@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { safeParseArray } from '@/lib/utils';
+import { safeParseArray, safeParseImageArray } from '@/lib/utils';
 
 export interface SearchOptions {
   query: string;
@@ -244,7 +244,7 @@ function transformSpot(spot: any) {
   return {
     ...spot,
     tags: safeParseArray(spot.tags),
-    images: safeParseArray(spot.images),
+    images: safeParseImageArray(spot.images),
   };
 }
 
@@ -252,7 +252,7 @@ function transformEvent(event: any) {
   return {
     ...event,
     tags: safeParseArray(event.tags),
-    images: safeParseArray(event.images),
+    images: safeParseImageArray(event.images),
   };
 }
 

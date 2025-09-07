@@ -14,6 +14,8 @@
     "import:csv": "node scripts/import-csv.js",
     "import:events:csv": "node scripts/import-events-csv.js",
     "sync:events": "node scripts/sync-events.js",
+    "sync:spots": "node scripts/sync-spots.js",
+    "enrich:spots": "node scripts/enrich-spots-from-names.js",
     "add:image": "node scripts/add-image.js",
     "migrate:images:supabase": "node scripts/migrate-images-to-supabase.js"
   },

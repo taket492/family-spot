@@ -86,6 +86,9 @@
 - Event ingestion API/CI remains available but not shown in UI
 
 ## Batch & Tooling
+- Spot ingest: `scripts/sync-spots.js` (CSV/JSON)
+  - Source file: `scripts/spot-sources.json` (see `scripts/spot-sources.json.example`)
+  - Dedup heuristic: same `name+city` and coordinates within ~50m
 - Event ingest: `scripts/sync-events.js` (CSV/JSON/ICS)
   - Source file: `scripts/event-sources.json`
   - Dedup: `url + startAt`
@@ -99,6 +102,8 @@
   - Node 20, install, Prisma generate, typecheck, build, lint(if defined)
 - Daily Event Sync: `.github/workflows/sync-events.yml`
   - 03:00 JST daily; `DATABASE_URL` check; migrate deploy; sync; post‑sync count
+- Spot Sync: `.github/workflows/sync-spots.yml`
+  - Manual dispatch; can be scheduled. Requires `DATABASE_URL` secret.
 - Release: `.github/workflows/release-please.yml` + `.release-please-config.json`
   - `googleapis/release-please-action@v4`
   - Org policy may restrict PR creation; toggle `skip-github-pull-request` if needed
@@ -115,4 +120,3 @@
 - Harden validations and introduce moderation or simple auth for admin ops
 - Migrate `tags`/`images` to native array/JSON types
 - Unify/clean older event sync workflow (`events-sync.yml`)
-
