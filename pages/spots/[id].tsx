@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
+import { Skeleton } from '@/components/ui/Skeleton';
+import Image from 'next/image';
 
 type Review = { id: string; stars: number; childAge: string; text: string; createdAt: string };
 type Spot = {
@@ -57,17 +59,31 @@ export default function SpotDetail() {
   return (
     <div className="page-container py-4">
       <Button variant="secondary" onClick={() => router.back()}>&larr; 戻る</Button>
-      {loading && <p className="mt-3">読み込み中…</p>}
+      {loading && !spot && (
+        <div className="mt-4">
+          <Skeleton className="aspect-[4/3] w-full" />
+          <Skeleton className="h-7 w-3/4 mt-4" />
+          <Skeleton className="h-4 w-40 mt-2" />
+          <div className="flex gap-2 mt-3">
+            <Skeleton className="h-6 w-16 rounded-full" />
+            <Skeleton className="h-6 w-20 rounded-full" />
+          </div>
+        </div>
+      )}
       {spot && (
         <div className="mt-4">
           {/* Image or placeholder */}
           {spot.images?.[0] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={spot.images[0]}
-              alt={spot.name}
-              className="rounded-2xl w-full h-auto object-cover aspect-[4/3] bg-neutralLight"
-            />
+            <div className="relative rounded-2xl overflow-hidden bg-neutralLight aspect-[4/3]">
+              <Image
+                src={spot.images[0]}
+                alt={spot.name}
+                fill
+                sizes="100vw"
+                className="object-cover"
+                priority={false}
+              />
+            </div>
           ) : (
             <div className="rounded-2xl overflow-hidden bg-neutralLight aspect-[4/3]"></div>
           )}
