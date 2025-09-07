@@ -57,6 +57,34 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
   const [info, setInfo] = useState<string | null>(null);
   const usedInitial = useRef(false);
   const [nextOffset, setNextOffset] = useState<number | null>(initialQ === q ? initialNextOffset : null);
+  // When we perform a client-side search, skip the immediate effect refetch
+  const manualFetchQ = useRef<string | null>(null);
+
+  async function performSearch(newQ: string) {
+    const controller = new AbortController();
+    try {
+      manualFetchQ.current = newQ;
+      setLoading(true);
+      const params = new URLSearchParams();
+      params.set('q', newQ);
+      params.set('limit', '20');
+      params.set('offset', '0');
+      // Prefer full-text search path on API for speed
+      params.set('fts', 'true');
+      const res = await fetch(`/api/spots?${params.toString()}`, { signal: controller.signal });
+      const data = await res.json();
+      const arr = Array.isArray(data) ? data : data.items;
+      setItems(arr || []);
+      setTotal(Array.isArray(data) ? arr.length : data.total || arr.length);
+      setNextOffset(data.nextOffset ?? null);
+      // Shallow route update to reflect the URL without re-running GSSP
+      router.replace({ pathname: '/search', query: { q: newQ } }, undefined, { shallow: true });
+    } catch (e) {
+      if ((e as any).name !== 'AbortError') console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // Events search feature temporarily disabled: always use 'spots'
 
@@ -64,6 +92,11 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
     const controller = new AbortController();
     async function run() {
       if (q == null) return;
+      // If this navigation originated from performSearch, skip duplicate fetch
+      if (manualFetchQ.current === q) {
+        manualFetchQ.current = null;
+        return;
+      }
       setLoading(true);
       try {
         if (mode === 'spots') {
@@ -77,6 +110,8 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
           params.set('q', q);
           params.set('limit', '20');
           params.set('offset', '0');
+          // Prefer full-text search
+          params.set('fts', 'true');
           const res = await fetch(`/api/spots?${params.toString()}`, { signal: controller.signal });
           const data = await res.json();
           const arr = Array.isArray(data) ? data : data.items;
@@ -158,14 +193,14 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
           placeholder="検索ワードを入力"
           onKeyDown={(e) => {
             if (e.key === 'Enter')
-              router.push(`/search?q=${encodeURIComponent((e.target as HTMLInputElement).value)}`);
+              performSearch((e.target as HTMLInputElement).value);
           }}
         />
         <div className="flex gap-2">
           <Button
             onClick={() => {
               const el = document.querySelector<HTMLInputElement>('input[placeholder="検索ワードを入力"]');
-              router.push(`/search?q=${encodeURIComponent(el?.value || '')}`);
+              performSearch(el?.value || '');
             }}
           >検索</Button>
           <Button
@@ -253,7 +288,7 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
             sortedSpots.map((s) => {
               const distance = geo ? Math.round(haversine(geo, { lat: s.lat, lng: s.lng }) / 100) / 10 : null; // km
               return (
-                <Link key={s.id} href={`/spots/${s.id}`} className="block">
+                <Link key={s.id} href={`/spots/${s.id}`} className="block" prefetch={false}>
                   <Card className="my-3 cursor-pointer hover:shadow-md transition-shadow">
                   <CardContent>
                     <div className="flex justify-between gap-3">
@@ -320,27 +355,13 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
 export const getServerSideProps: GetServerSideProps<SearchProps> = async (ctx) => {
   const q = (ctx.query.q as string) || '';
   try {
-    const { prisma } = await import('@/lib/db');
-    const tokens = q.split(/\s+/).filter(Boolean);
-    const tagConds = tokens.map((t) => ({ tags: { contains: t } }));
-    const where: any = q
-      ? { OR: [{ name: { contains: q } }, { city: { contains: q } }, ...tagConds] }
-      : {};
-    const [raw, total] = await Promise.all([
-      prisma.spot.findMany({ where, orderBy: { updatedAt: 'desc' }, take: 20, skip: 0 }),
-      prisma.spot.count({ where }),
-    ]);
-    const items = raw.map((s: any) => ({
-      ...s,
-      tags: safeParseArray(s.tags),
-      images: safeParseArray(s.images),
-    }));
-    // Set short cache headers to allow CDN caching of SSR response
-    ctx.res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=300');
-    const nextOffset = items.length < total ? items.length : null;
+    // Reuse server-side search util with Postgres full-text search for speed
+    const { searchSpots } = await import('@/lib/search');
+    const { items, total, nextOffset } = await searchSpots({ query: q, limit: 20, offset: 0, useFullTextSearch: true });
+    // Allow CDN caching of SSR response for brief period
+    ctx.res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=180, stale-while-revalidate=600');
     return { props: { initialQ: q, initialItems: items, initialTotal: total, initialNextOffset: nextOffset } };
   } catch {
     return { props: { initialQ: q, initialItems: [], initialTotal: 0, initialNextOffset: null } };
   }
 };
-

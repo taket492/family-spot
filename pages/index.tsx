@@ -183,7 +183,7 @@ export default function Home({ featured }: HomeProps) {
 
       <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
         {featured.map((s) => (
-          <Link key={s.id} href={`/spots/${s.id}`} className="block">
+          <Link key={s.id} href={`/spots/${s.id}`} className="block" prefetch={false}>
             <Card interactive className="cursor-pointer">
             <div className="relative aspect-[4/3] w-full rounded-t-2xl overflow-hidden bg-neutralLight">
               {s.images?.[0] ? (
@@ -302,4 +302,3 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async ({ res })
     return { props: { featured: [] } };
   }
 };
-
