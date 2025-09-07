@@ -18,6 +18,12 @@ const nextConfig = {
     // Fallback for failed images
     unoptimized: false,
   },
+  async redirects() {
+    return [
+      // Serve SVG favicon when .ico is requested to avoid 404
+      { source: '/favicon.ico', destination: '/favicon.svg', permanent: true },
+    ];
+  },
 };
 
 module.exports = nextConfig;
