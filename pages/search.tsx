@@ -71,6 +71,11 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
       params.set('offset', '0');
       // Prefer full-text search path on API for speed
       params.set('fts', 'true');
+      // Check if we're coming from restaurant search page
+      if (window.location.pathname.includes('restaurant') || 
+          window.document.referrer.includes('restaurant')) {
+        params.set('restaurant', 'true');
+      }
       const res = await fetch(`/api/spots?${params.toString()}`, { signal: controller.signal });
       const data = await res.json();
       const arr = Array.isArray(data) ? data : data.items;
@@ -112,6 +117,11 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
           params.set('offset', '0');
           // Prefer full-text search
           params.set('fts', 'true');
+          // Check if we're coming from restaurant search page
+          if (window.location.pathname.includes('restaurant') || 
+              window.document.referrer.includes('restaurant')) {
+            params.set('restaurant', 'true');
+          }
           const res = await fetch(`/api/spots?${params.toString()}`, { signal: controller.signal });
           const data = await res.json();
           const arr = Array.isArray(data) ? data : data.items;

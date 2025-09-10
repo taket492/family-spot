@@ -5,8 +5,8 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function hasRegClass(name) {
-  const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass($1) AS oid`, name);
-  return rows && rows[0] && rows[0].oid !== null;
+  const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass($1)::text AS oid`, name);
+  return rows && rows[0] && rows[0].oid !== null && rows[0].oid !== 'null';
 }
 
 async function detectSearchVectorColumn(table) {
@@ -32,6 +32,23 @@ async function run() {
     ];
 
     for (const idx of ginIdx) {
+      const exists = await hasRegClass(idx.name);
+      if (!exists) {
+        console.log(`[optimize-db] Creating ${idx.name}...`);
+        await prisma.$executeRawUnsafe(idx.sql);
+      } else {
+        console.log(`[optimize-db] ${idx.name} exists`);
+      }
+    }
+
+    // Restaurant search optimization indexes
+    const restaurantIdx = [
+      { name: 'spot_type_idx', sql: 'CREATE INDEX CONCURRENTLY IF NOT EXISTS spot_type_idx ON "Spot" USING btree ("type")' },
+      { name: 'spot_type_updated_idx', sql: 'CREATE INDEX CONCURRENTLY IF NOT EXISTS spot_type_updated_idx ON "Spot" ("type", "updatedAt" DESC)' },
+      { name: 'spot_restaurant_search_idx', sql: `CREATE INDEX CONCURRENTLY IF NOT EXISTS spot_restaurant_search_idx ON "Spot" USING gin ("${spotVecCol}") WHERE "type" = 'restaurant'` },
+    ];
+
+    for (const idx of restaurantIdx) {
       const exists = await hasRegClass(idx.name);
       if (!exists) {
         console.log(`[optimize-db] Creating ${idx.name}...`);

@@ -61,10 +61,68 @@ export async function searchSpots(options: SearchOptions): Promise<SearchResult<
     return { items, total, nextOffset };
   }
 
+  // Check if this is a restaurant-specific search from the restaurant search page
+  const isRestaurantSearch = query.includes('restaurant') || 
+    tokens.some(t => ['レストラン', 'グルメ', '食事', 'ランチ', 'ディナー'].includes(t));
+
   if (useFullTextSearch) {
+    if (isRestaurantSearch) {
+      return searchRestaurantsWithFullText(query, boundedLimit, boundedOffset);
+    }
     return searchSpotsWithFullText(query, boundedLimit, boundedOffset);
   } else {
     return searchSpotsLegacy(query, boundedLimit, boundedOffset);
+  }
+}
+
+async function searchRestaurantsWithFullText(query: string, limit: number, offset: number): Promise<SearchResult<any>> {
+  // Sanitize query for tsquery - escape special characters
+  const sanitizedQuery = query
+    .trim()
+    .split(/\s+/)
+    .map(term => term.replace(/[^\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, ''))
+    .filter(Boolean)
+    .join(' & ');
+
+  if (!sanitizedQuery) {
+    return { items: [], total: 0, nextOffset: null };
+  }
+
+  try {
+    // Optimized full-text search for restaurants only
+    const searchQuery = `
+      SELECT 
+        id, type, name, city, address, lat, lng, phone, tags, "openHours", 
+        "priceBand", images, rating, "createdAt", "updatedAt",
+        ts_rank(search_vector, to_tsquery('simple', $1)) as rank
+      FROM "Spot" 
+      WHERE search_vector @@ to_tsquery('simple', $1)
+        AND type = 'restaurant'
+      ORDER BY rank DESC, "updatedAt" DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const countQuery = `
+      SELECT COUNT(*) as count
+      FROM "Spot" 
+      WHERE search_vector @@ to_tsquery('simple', $1)
+        AND type = 'restaurant'
+    `;
+
+    const [rawResults, countResult] = await Promise.all([
+      prisma.$queryRawUnsafe(searchQuery, sanitizedQuery, limit, offset),
+      prisma.$queryRawUnsafe(countQuery, sanitizedQuery),
+    ]);
+
+    const items = (rawResults as any[]).map(transformSpot);
+    const total = Number((countResult as any[])[0]?.count || 0);
+    const nextOffset = offset + items.length < total ? offset + items.length : null;
+
+    return { items, total, nextOffset };
+  } catch (error) {
+    console.error('Restaurant full-text search error:', error);
+    // Fallback to legacy search on error
+    return searchRestaurantsLegacy(query, limit, offset);
   }
 }
 
@@ -262,6 +320,35 @@ async function searchEventsLegacy(query: string, limit: number, offset: number):
   ]);
 
   const items = raw.map(transformEvent);
+  const nextOffset = offset + items.length < total ? offset + items.length : null;
+  return { items, total, nextOffset };
+}
+
+async function searchRestaurantsLegacy(query: string, limit: number, offset: number): Promise<SearchResult<any>> {
+  const tokens = query.split(/\s+/).filter(Boolean);
+  const tagConds = tokens.map(t => ({ tags: { contains: t } }));
+  
+  const where = {
+    type: 'restaurant' as const,
+    OR: [
+      { name: { contains: query, mode: 'insensitive' as const } },
+      { city: { contains: query, mode: 'insensitive' as const } },
+      { address: { contains: query, mode: 'insensitive' as const } },
+      ...tagConds,
+    ],
+  };
+
+  const [raw, total] = await Promise.all([
+    prisma.spot.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.spot.count({ where }),
+  ]);
+
+  const items = raw.map(transformSpot);
   const nextOffset = offset + items.length < total ? offset + items.length : null;
   return { items, total, nextOffset };
 }
