@@ -21,12 +21,15 @@ export default async function handler(
   }
 
   try {
+    console.log('Signup attempt for email:', email);
+    
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email }
     });
 
     if (existingUser) {
+      console.log('User already exists:', email);
       return res.status(400).json({ message: 'User already exists' });
     }
 
@@ -41,6 +44,8 @@ export default async function handler(
         password: hashedPassword,
       }
     });
+
+    console.log('User created successfully:', user.email, 'ID:', user.id);
 
     // Return user without password
     const { password: _, ...userWithoutPassword } = user;

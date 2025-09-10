@@ -1,5 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import { prisma } from './db';
+import bcrypt from 'bcryptjs';
 
 const secret = process.env.NEXTAUTH_SECRET || 'development-secret-key-please-change-in-production-min-32-chars';
 
@@ -17,27 +19,72 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        // Simplified authorization for testing
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
-        // Temporary: allow test user
-        if (credentials.email === 'test@example.com' && credentials.password === 'password') {
-          return {
-            id: '1',
-            email: 'test@example.com',
-            name: 'Test User',
-            role: 'user'
-          };
-        }
+        try {
+          // Check for test user first (for development)
+          if (credentials.email === 'test@example.com' && credentials.password === 'password') {
+            return {
+              id: '1',
+              email: 'test@example.com',
+              name: 'Test User',
+              role: 'user'
+            };
+          }
 
-        return null;
+          // Check database for real users
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email }
+          });
+
+          if (!user) {
+            console.log('User not found:', credentials.email);
+            return null;
+          }
+
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+
+          if (!isPasswordValid) {
+            console.log('Invalid password for user:', credentials.email);
+            return null;
+          }
+
+          console.log('User authenticated successfully:', user.email);
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name || null,
+            role: user.role,
+          };
+        } catch (error) {
+          console.error('Auth error:', error);
+          return null;
+        }
       }
     })
   ],
   session: {
     strategy: 'jwt'
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token && token.sub) {
+        session.user.id = token.sub;
+        session.user.role = token.role;
+      }
+      return session;
+    }
   },
   pages: {
     signIn: '/auth/signin',
