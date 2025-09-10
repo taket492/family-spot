@@ -131,18 +131,46 @@ export default function SpotDetail() {
       )}
       {spot && (
         <div className="mt-4">
-          {/* Image or placeholder */}
-          <div className="relative rounded-2xl overflow-hidden bg-neutralLight aspect-[4/3]">
-            {spot.images?.[0] ? (
-              <OptimizedImage
-                src={spot.images[0]}
-                alt={spot.name}
-                fill
-                sizes="100vw"
-                className="object-cover rounded-2xl"
-                priority={true}
-              />
-            ) : (
+          {/* Images gallery or placeholder */}
+          {spot.images && spot.images.length > 0 ? (
+            <div className="space-y-4">
+              {/* Main image */}
+              <div className="relative rounded-2xl overflow-hidden bg-neutralLight aspect-[4/3]">
+                <OptimizedImage
+                  src={spot.images[0]}
+                  alt={`${spot.name}のメイン画像`}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                  className="object-cover rounded-2xl"
+                  priority={true}
+                />
+              </div>
+              
+              {/* Additional images */}
+              {spot.images.length > 1 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {spot.images.slice(1, 7).map((image, index) => (
+                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                      <OptimizedImage
+                        src={image}
+                        alt={`${spot.name}の画像 ${index + 2}`}
+                        fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                        className="object-cover rounded-lg"
+                        lazy={true}
+                      />
+                    </div>
+                  ))}
+                  {spot.images.length > 7 && (
+                    <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-600 text-sm">+{spot.images.length - 7}枚</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="relative rounded-2xl overflow-hidden bg-neutralLight aspect-[4/3]">
               <div 
                 className="aspect-[4/3] w-full bg-gray-200 rounded-2xl flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors"
                 onClick={handleImageClick}
@@ -167,8 +195,34 @@ export default function SpotDetail() {
                   )}
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+          
+          {/* Add image button for existing spots with images */}
+          {spot.images && spot.images.length > 0 && (
+            <button
+              onClick={handleImageClick}
+              disabled={uploading}
+              className="mt-2 w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed rounded-lg text-gray-600 text-sm transition-colors flex items-center justify-center gap-2"
+            >
+              {uploading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  アップロード中...
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V9h-3V7H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/>
+                  </svg>
+                  画像を追加
+                </>
+              )}
+            </button>
+          )}
           
           {/* Hidden file input */}
           <input
