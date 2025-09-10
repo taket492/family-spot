@@ -1,8 +1,14 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
+const secret = process.env.NEXTAUTH_SECRET || 'development-secret-key-please-change-in-production-min-32-chars';
+
+if (!secret || secret.length < 32) {
+  console.warn('NextAuth: Please set a secure NEXTAUTH_SECRET with at least 32 characters');
+}
+
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development',
+  secret,
   providers: [
     CredentialsProvider({
       name: 'credentials',
