@@ -7,6 +7,7 @@ import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import Link from 'next/link';
 import type { GetServerSideProps } from 'next';
 import { safeParseArray } from '@/lib/utils';
+import AuthButton from '@/components/AuthButton';
 
 type Spot = {
   id: string;
@@ -92,6 +93,11 @@ export default function Home({ featured }: HomeProps) {
 
   return (
     <div className="page-container py-6">
+      {/* Auth button */}
+      <div className="flex justify-end mb-4">
+        <AuthButton />
+      </div>
+      
       {/* Hero */}
       <div className="flex items-start gap-4">
         <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden className="shrink-0">
