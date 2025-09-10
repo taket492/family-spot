@@ -12,9 +12,16 @@ const nextConfig = {
       // Allow HTTP for development/local testing
       { protocol: 'http', hostname: 'localhost' },
     ],
+    // Image optimization formats - prioritize modern formats
+    formats: ['image/webp', 'image/avif'],
+    // Quality setting for optimized images
+    quality: 80,
     // Enable image optimization error handling
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    // Image sizes for responsive optimization
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     // Fallback for failed images
     unoptimized: false,
   },
