@@ -24,8 +24,10 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Check for test user first (for development)
-          if (credentials.email === 'test@example.com' && credentials.password === 'password') {
+          // Check for test user (development only)
+          if (process.env.NODE_ENV === 'development' && 
+              credentials.email === 'test@example.com' && 
+              credentials.password === 'password') {
             return {
               id: '1',
               email: 'test@example.com',
@@ -40,7 +42,9 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user) {
-            console.log('User not found:', credentials.email);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('User not found:', credentials.email);
+            }
             return null;
           }
 
@@ -50,11 +54,15 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!isPasswordValid) {
-            console.log('Invalid password for user:', credentials.email);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Invalid password for user:', credentials.email);
+            }
             return null;
           }
 
-          console.log('User authenticated successfully:', user.email);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('User authenticated successfully:', user.email);
+          }
           return {
             id: user.id,
             email: user.email,
@@ -89,5 +97,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/auth/signin',
   },
-  debug: true,
+  debug: process.env.NODE_ENV === 'development',
 };

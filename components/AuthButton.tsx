@@ -15,7 +15,7 @@ export default function AuthButton() {
           こんにちは、{session.user.name || session.user.email}さん
         </span>
         <button
-          onClick={() => signOut()}
+          onClick={() => signOut({ callbackUrl: '/' })}
           className="text-sm text-red-600 hover:text-red-800"
         >
           ログアウト
