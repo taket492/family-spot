@@ -14,8 +14,6 @@ const nextConfig = {
     ],
     // Image optimization formats - prioritize modern formats
     formats: ['image/webp', 'image/avif'],
-    // Quality setting for optimized images
-    quality: 80,
     // Enable image optimization error handling
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
