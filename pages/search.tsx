@@ -456,7 +456,7 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
             )}
           </div>
         ) : (
-          {/* Map View */}
+          /* Map View */
           <Card className="p-4">
             <Map
               spots={mapSpots}
