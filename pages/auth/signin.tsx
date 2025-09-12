@@ -26,11 +26,8 @@ export default function SignIn() {
 
       if (result?.error) {
         setError('メールアドレスまたはパスワードが間違っています');
-      } else {
-        const session = await getSession();
-        if (session) {
-          router.push((callbackUrl as string) || '/');
-        }
+      } else if (result?.ok) {
+        router.push((callbackUrl as string) || '/');
       }
     } catch (err) {
       setError('ログインに失敗しました');
