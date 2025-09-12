@@ -99,127 +99,180 @@ export default function Home({ featured }: HomeProps) {
       </div>
       
       {/* Hero */}
-      <div className="flex items-start gap-4">
-        <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden className="shrink-0">
-          <circle cx="32" cy="32" r="30" fill="#E8F5E9" stroke="#4CAF50" strokeWidth="3" />
-          <circle cx="24" cy="26" r="3" fill="#2e7d32" />
-          <circle cx="40" cy="26" r="3" fill="#2e7d32" />
-          <path d="M22 40c4 4 16 4 20 0" stroke="#2e7d32" strokeWidth="3" fill="none" strokeLinecap="round" />
-        </svg>
-        <div>
-          <div className="font-en text-3xl sm:text-4xl font-extrabold leading-tight">
+      <div className="text-center py-8 animate-fade-in">
+        <div className="mb-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-primary shadow-lg mb-4 animate-bounce-soft">
+            <svg width="48" height="48" viewBox="0 0 64 64" aria-hidden className="text-white">
+              <circle cx="24" cy="26" r="3" fill="currentColor" />
+              <circle cx="40" cy="26" r="3" fill="currentColor" />
+              <path d="M22 40c4 4 16 4 20 0" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
+            </svg>
+          </div>
+          <h1 className="font-en text-4xl sm:text-5xl font-extrabold leading-tight bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
             <div>静岡県 子連れ向け</div>
             <div>検索サイト</div>
-          </div>
+          </h1>
+          <p className="mt-4 text-lg text-neutral-600 max-w-2xl mx-auto">
+            家族での素敵な時間を過ごせる場所を見つけよう
+          </p>
         </div>
       </div>
 
       {/* Search box */}
-      <div className="mt-4">
-        <div className="flex items-center gap-2">
-          <div className="flex-1 flex items-center rounded-2xl border-2 border-primary bg-[#F1FAF1] px-4 py-3">
-            <span className="text-primary mr-2">🔍</span>
-            <input
-              className="w-full bg-transparent outline-none text-base"
-              placeholder="キーワードで探す"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && runSearch()}
-            />
+      <div className="mt-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center gap-3 p-2 rounded-2xl bg-white shadow-card hover:shadow-card-hover transition-all duration-200 border border-neutral-100">
+            <div className="flex-1 flex items-center px-4 py-3">
+              <div className="w-5 h-5 text-primary-500 mr-3">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <input
+                className="w-full bg-transparent outline-none text-base placeholder:text-neutral-400"
+                placeholder="キーワードで探す（例：公園、授乳室、屋内）"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+              />
+            </div>
+            <Button 
+              onClick={() => runSearch()}
+              size="lg"
+              className="shrink-0"
+            >
+              検索
+            </Button>
           </div>
-          <Button onClick={() => runSearch()}>検索</Button>
         </div>
       </div>
 
       {/* Quick filters */}
-      <div className="mt-4 grid grid-cols-3 gap-3 max-w-xl">
-        <button
-          className="rounded-2xl bg-[#E8F0FF] text-[#1e40af] px-4 py-3 text-base font-medium"
-          onClick={() => router.push('/search?age=0-2')}
-        >
-          0〜2歳
-        </button>
-        <button
-          className="rounded-2xl bg-[#E8F0FF] text-[#1e40af] px-4 py-3 text-base font-medium"
-          onClick={() => runSearch('屋内')}
-        >
-          屋内
-        </button>
-        <button
-          className="rounded-2xl bg-[#E8F0FF] text-[#1e40af] px-4 py-3 text-base font-medium"
-          onClick={() => runSearch('授乳室')}
-        >
-          授乳室あり
-        </button>
+      <div className="mt-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="grid grid-cols-3 gap-3">
+            <Button
+              variant="outline"
+              size="md"
+              className="rounded-2xl h-12 font-medium hover:scale-105 transition-transform"
+              onClick={() => router.push('/search?age=0-2')}
+            >
+              👶 0〜2歳
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              className="rounded-2xl h-12 font-medium hover:scale-105 transition-transform"
+              onClick={() => runSearch('屋内')}
+            >
+              🏠 屋内
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              className="rounded-2xl h-12 font-medium hover:scale-105 transition-transform"
+              onClick={() => runSearch('授乳室')}
+            >
+              🤱 授乳室あり
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Entrypoints to category-first pages */}
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
-        <Button
-          variant="secondary"
-          size="lg"
-          className="rounded-full h-14 text-base"
-          onClick={() => router.push('/search-top')}
-        >
-          スポットをカテゴリから探す
-        </Button>
-        <Button
-          variant="secondary"
-          size="lg"
-          className="rounded-full h-14 text-base"
-          onClick={() => router.push('/search-top-restaurant')}
-        >
-          レストランを特徴から探す
-        </Button>
-        <Button
-          variant="primary"
-          size="lg"
-          className="rounded-full h-14 text-base"
-          onClick={() => router.push('/spots/new')}
-        >
-          スポットを登録する
-        </Button>
+      <div className="mt-10">
+        <div className="max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Button
+              variant="outline"
+              size="xl"
+              className="rounded-2xl h-16 text-base font-semibold group hover:scale-105 transition-all duration-200"
+              onClick={() => router.push('/search-top')}
+            >
+              <span className="mr-2">🗺️</span>
+              スポットをカテゴリから探す
+            </Button>
+            <Button
+              variant="outline"
+              size="xl"
+              className="rounded-2xl h-16 text-base font-semibold group hover:scale-105 transition-all duration-200"
+              onClick={() => router.push('/search-top-restaurant')}
+            >
+              <span className="mr-2">🍽️</span>
+              レストランを特徴から探す
+            </Button>
+          </div>
+          <div className="mt-4">
+            <Button
+              variant="gradient"
+              size="xl"
+              className="w-full rounded-2xl h-16 text-base font-semibold hover:scale-105 transition-all duration-200"
+              onClick={() => router.push('/spots/new')}
+            >
+              <span className="mr-2">✨</span>
+              スポットを登録する
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Featured */}
-      <div className="mt-8 flex items-baseline justify-between">
-        <h2 className="text-2xl font-bold text-primary">注目のスポット</h2>
-        <Link className="text-secondary font-medium" href="/search">もっと見る ＞</Link>
-      </div>
-
-      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {featured.map((s) => (
-          <Link key={s.id} href={`/spots/${s.id}`} className="block" prefetch={false}>
-            <Card interactive className="cursor-pointer">
-            <div className="relative aspect-[4/3] w-full rounded-t-2xl overflow-hidden bg-neutralLight">
-              {s.images?.[0] ? (
-                <OptimizedImage
-                  src={s.images[0]}
-                  alt={s.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover rounded-t-2xl"
-                  priority={false}
-                />
-              ) : (
-                <div className="aspect-[4/3] w-full bg-gray-200 rounded-t-2xl flex items-center justify-center">
-                  <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                  </svg>
+      <div className="mt-16">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
+            注目のスポット
+          </h2>
+          <p className="mt-2 text-neutral-600">みんなにおすすめの人気スポット</p>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-fade-in">
+          {featured.map((s) => (
+            <Link key={s.id} href={`/spots/${s.id}`} className="block group" prefetch={false}>
+              <Card interactive className="overflow-hidden">
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
+                  {s.images?.[0] ? (
+                    <OptimizedImage
+                      src={s.images[0]}
+                      alt={s.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover transition-transform duration-300 group-hover:scale-110"
+                      priority={false}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
+                      <svg className="h-12 w-12 text-neutral-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                      </svg>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                 </div>
-              )}
-            </div>
-            <CardContent>
-              <div className="text-xl font-bold">{s.name}</div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {s.tags?.slice(0, 4).map((t) => (
-                  <Badge key={t} label={t} />
-                ))}
-              </div>
-            </CardContent>
-            </Card>
+                <CardContent className="p-6">
+                  <h3 className="text-xl font-bold text-neutral-900 group-hover:text-primary-600 transition-colors duration-200 mb-3">
+                    {s.name}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {s.tags?.slice(0, 4).map((t) => (
+                      <Badge key={t} label={t} variant="soft" />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+        
+        <div className="text-center mt-8">
+          <Link href="/search">
+            <Button variant="ghost" size="lg" className="font-semibold">
+              もっと見る
+              <svg className="ml-2 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </Button>
           </Link>
-        ))}
+        </div>
       </div>
 
       {/* Events (hidden) */}

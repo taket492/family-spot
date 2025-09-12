@@ -2,11 +2,34 @@ import React from 'react';
 
 type CardProps = React.HTMLAttributes<HTMLDivElement> & {
   interactive?: boolean;
+  variant?: 'default' | 'elevated' | 'outlined' | 'glass';
 };
 
-export function Card({ className = '', interactive = false, ...props }: CardProps) {
-  const interactiveCls = interactive ? 'hover:shadow-md transition-shadow' : '';
-  return <div className={`rounded-2xl bg-white shadow-card ${interactiveCls} ${className}`} {...props} />;
+export function Card({ 
+  className = '', 
+  interactive = false, 
+  variant = 'default',
+  ...props 
+}: CardProps) {
+  const baseClasses = 'rounded-2xl transition-all duration-200 ease-in-out';
+  
+  const variants = {
+    default: 'bg-white shadow-card',
+    elevated: 'bg-white shadow-lg',
+    outlined: 'bg-white border border-neutral-200',
+    glass: 'glass shadow-lg',
+  };
+  
+  const interactiveClasses = interactive 
+    ? 'hover:shadow-card-hover hover:-translate-y-1 cursor-pointer transform-gpu' 
+    : '';
+  
+  return (
+    <div 
+      className={`${baseClasses} ${variants[variant]} ${interactiveClasses} ${className}`} 
+      {...props} 
+    />
+  );
 }
 
 type CardHeaderProps = React.HTMLAttributes<HTMLDivElement>;

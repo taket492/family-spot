@@ -11,10 +11,71 @@
 html, body, #__next { height: 100%; }
 
 body {
-  @apply bg-neutralLight text-gray-900 font-sans;
+  @apply bg-neutral-50 text-neutral-900 font-sans;
+  line-height: 1.6;
 }
 
-.map { @apply w-full h-[420px] border border-gray-200 rounded-xl bg-white; }
+.map { 
+  @apply w-full h-[420px] border border-neutral-200 rounded-2xl bg-white shadow-card; 
+}
 
 /* Utility for container padding */
-.page-container { @apply mx-auto max-w-screen-md px-4 sm:px-6 md:px-8; }
+.page-container { 
+  @apply mx-auto max-w-screen-md px-4 sm:px-6 md:px-8; 
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced focus styles */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  @apply ring-2 ring-primary-400 ring-offset-2 ring-offset-white;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-neutral-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-neutral-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-neutral-400;
+}
+
+/* Text selection */
+::selection {
+  @apply bg-primary-100 text-primary-800;
+}
+
+/* Loading states */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Glass morphism effect */
+.glass {
+  backdrop-filter: blur(10px);
+  @apply bg-white/80 border border-white/20;
+}
