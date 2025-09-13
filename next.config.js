@@ -1,6 +1,16 @@
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Optimize production builds
+  swcMinify: true,
+  // Enable package import optimization
+  experimental: {
+    optimizePackageImports: ['maplibre-gl'],
+  },
   images: {
     remotePatterns: [
       // Supabase public bucket
@@ -13,7 +23,7 @@ const nextConfig = {
       { protocol: 'http', hostname: 'localhost' },
     ],
     // Image optimization formats - prioritize modern formats
-    formats: ['image/webp', 'image/avif'],
+    formats: ['image/avif', 'image/webp'],
     // Enable image optimization error handling
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -22,6 +32,35 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     // Fallback for failed images
     unoptimized: false,
+    // Cache optimized images for 1 year
+    minimumCacheTTL: 31536000,
+  },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+        ],
+      },
+      // Cache static assets
+      {
+        source: '/images/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
   },
   async redirects() {
     return [
@@ -31,4 +70,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

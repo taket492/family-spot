@@ -25,7 +25,7 @@ export function OptimizedImage({
   height,
   className = '',
   fill = false,
-  sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
+  sizes = '(max-width: 640px) 100vw, (max-width: 768px) 80vw, (max-width: 1024px) 50vw, (max-width: 1280px) 40vw, 33vw',
   priority = false,
   fallbackSrc,
   lazy = true,
@@ -86,8 +86,23 @@ export function OptimizedImage({
     onLoadingComplete?.();
   };
 
-  // Generate blur placeholder if none provided
-  const defaultBlurDataURL = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPgo=';
+  // Generate optimized blur placeholder
+  const getBlurDataURL = () => {
+    if (blurDataURL) return blurDataURL;
+    
+    // Create a minimal blur placeholder
+    const svg = `<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="#f3f4f6"/>
+      <rect width="100%" height="100%" fill="url(#g)"/>
+      <defs>
+        <linearGradient id="g">
+          <stop offset="0%" stop-color="#e5e7eb"/>
+          <stop offset="100%" stop-color="#f9fafb"/>
+        </linearGradient>
+      </defs>
+    </svg>`;
+    return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  };
 
   // Show placeholder if error and no fallback
   if (hasError) {
@@ -136,7 +151,7 @@ export function OptimizedImage({
           className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
           priority={priority}
           placeholder={placeholder}
-          blurDataURL={blurDataURL || defaultBlurDataURL}
+          blurDataURL={getBlurDataURL()}
           onError={handleError}
           onLoadingComplete={handleLoadingComplete}
         />
@@ -163,7 +178,7 @@ export function OptimizedImage({
         className={`${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
         priority={priority}
         placeholder={placeholder}
-        blurDataURL={blurDataURL || defaultBlurDataURL}
+        blurDataURL={getBlurDataURL()}
         onError={handleError}
         onLoadingComplete={handleLoadingComplete}
       />

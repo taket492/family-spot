@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
-const Map = dynamic(() => import('@/components/Map'), { ssr: false });
+
+// Optimized map loading with better loading UI
+const Map = dynamic(() => import('@/components/Map'), { 
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-neutral-100 animate-pulse flex items-center justify-center rounded-lg">
+      <div className="flex flex-col items-center space-y-2 text-neutral-500">
+        <div className="size-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm">地図を読み込み中...</p>
+      </div>
+    </div>
+  )
+});
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
