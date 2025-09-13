@@ -52,6 +52,7 @@ export default function VisitStatusButton({ type, itemId, itemName, className = 
 
   async function updateStatus(status: string) {
     setIsUpdating(true);
+    console.log('Updating visit status:', { type, itemId, status });
     try {
       const response = await fetch(`/api/visits/${type}s/${itemId}`, {
         method: 'POST',
@@ -63,10 +64,15 @@ export default function VisitStatusButton({ type, itemId, itemName, className = 
         }),
       });
 
+      console.log('Update response:', response.status, response.ok);
       if (response.ok) {
+        const data = await response.json();
+        console.log('Update response data:', data);
         setCurrentStatus(status as VisitStatus | EventVisitStatus);
         setShowMenu(false);
       } else {
+        const errorData = await response.json();
+        console.error('Update failed:', errorData);
         alert('ステータスの更新に失敗しました');
       }
     } catch (error) {

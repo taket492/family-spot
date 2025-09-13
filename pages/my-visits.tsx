@@ -82,9 +82,13 @@ export default function MyVisits() {
   async function loadVisitData() {
     try {
       const response = await fetch('/api/visits');
+      console.log('Visit data response:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('Visit data loaded:', data);
         setVisitData(data);
+      } else {
+        console.error('Failed to load visit data:', response.status);
       }
     } catch (error) {
       console.error('Failed to load visit data:', error);
@@ -137,19 +141,19 @@ export default function MyVisits() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card className="text-center">
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-green-600">{visitData.stats.visitedSpots}</div>
+            <div className="text-2xl font-bold text-green-600">{visitData.stats.visitedSpots + visitData.stats.attendedEvents}</div>
             <div className="text-sm text-gray-600">行った場所</div>
           </CardContent>
         </Card>
         <Card className="text-center">
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-blue-600">{visitData.stats.attendedEvents}</div>
-            <div className="text-sm text-gray-600">参加イベント</div>
+            <div className="text-2xl font-bold text-blue-600">{visitData.spots.filter(v => v.status === 'want_to_visit').length + visitData.events.filter(v => v.status === 'want_to_attend').length}</div>
+            <div className="text-sm text-gray-600">行きたい</div>
           </CardContent>
         </Card>
         <Card className="text-center">
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-yellow-600">{visitData.stats.favoriteSpots}</div>
+            <div className="text-2xl font-bold text-yellow-600">{visitData.stats.favoriteSpots + visitData.stats.interestedEvents}</div>
             <div className="text-sm text-gray-600">お気に入り</div>
           </CardContent>
         </Card>
