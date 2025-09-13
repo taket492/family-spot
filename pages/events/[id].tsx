@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
+import VisitStatusButton from '@/components/VisitStatusButton';
 
 type EventItem = {
   id: string;
@@ -116,6 +117,15 @@ export default function EventDetail() {
             {ev.tags?.map((t: string) => (
               <Badge key={t} label={t} />
             ))}
+          </div>
+
+          {/* Visit Status */}
+          <div className="mt-3">
+            <VisitStatusButton
+              type="event"
+              itemId={ev.id}
+              itemName={ev.title}
+            />
           </div>
 
           <div className="mt-3 flex gap-2 flex-wrap">

@@ -14,6 +14,12 @@ export default function AuthButton() {
         <span className="text-sm text-gray-700">
           こんにちは、{session.user.name || session.user.email}さん
         </span>
+        <Link
+          href="/my-visits"
+          className="text-sm text-blue-600 hover:text-blue-800"
+        >
+          マイ記録
+        </Link>
         <button
           onClick={() => signOut({ callbackUrl: '/' })}
           className="text-sm text-red-600 hover:text-red-800"

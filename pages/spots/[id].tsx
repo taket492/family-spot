@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { useAuth } from '@/hooks/useAuth';
+import VisitStatusButton from '@/components/VisitStatusButton';
 
 type Review = { id: string; stars: number; childAge: string; text: string; createdAt: string };
 type Spot = {
@@ -307,6 +308,15 @@ export default function SpotDetail() {
             {spot.tags?.map((t: string) => (
               <Badge key={t} label={t} />
             ))}
+          </div>
+
+          {/* Visit Status */}
+          <div className="mt-3">
+            <VisitStatusButton
+              type="spot"
+              itemId={spot.id}
+              itemName={spot.name}
+            />
           </div>
 
           {/* Actions */}

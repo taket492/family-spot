@@ -23,6 +23,7 @@ model Spot {
   images       String              // JSON string of string[]
   rating       Float               @default(0)
   reviews      Review[]
+  userVisits   UserSpotVisit[]
   searchVector Unsupported("tsvector")?
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
@@ -61,6 +62,7 @@ model Event {
   source       String?
   url          String?
   status       String              @default("public")
+  userVisits   UserEventVisit[]
   searchVector Unsupported("tsvector")?
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
@@ -78,6 +80,8 @@ model User {
   role      String    @default("user") // "guest", "user", "admin"
   accounts  Account[]
   sessions  Session[]
+  spotVisits UserSpotVisit[]
+  eventVisits UserEventVisit[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -107,4 +111,42 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserSpotVisit {
+  id         String    @id @default(cuid())
+  userId     String
+  spotId     String
+  status     String    // "visited", "want_to_visit", "favorite"
+  visitedAt  DateTime? // When they actually visited (optional)
+  notes      String?   // Personal notes about the visit
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spot Spot @relation(fields: [spotId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, spotId])
+  @@index([userId])
+  @@index([spotId])
+  @@index([status])
+}
+
+model UserEventVisit {
+  id         String    @id @default(cuid())
+  userId     String
+  eventId    String
+  status     String    // "attended", "want_to_attend", "interested"
+  attendedAt DateTime? // When they actually attended (optional)
+  notes      String?   // Personal notes about the event
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+  @@index([status])
 }
