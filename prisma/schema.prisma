@@ -75,7 +75,7 @@ model User {
   email     String    @unique
   name      String?
   password  String
-  role      String    @default("user")
+  role      String    @default("user") // "guest", "user", "admin"
   accounts  Account[]
   sessions  Session[]
   createdAt DateTime  @default(now())

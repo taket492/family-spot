@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
+import { useAuth } from '@/hooks/useAuth';
 
 type EventItem = {
   id: string;
@@ -25,6 +26,8 @@ export default function EventDetail() {
   const { id } = router.query as { id?: string };
   const [ev, setEv] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
     if (!id) return;
@@ -56,6 +59,32 @@ export default function EventDetail() {
     const end = ev.endAt ? new Date(ev.endAt) : null;
     return end ? `${start.toLocaleString()} - ${end.toLocaleString()}` : start.toLocaleString();
   }, [ev]);
+
+  async function handleDelete() {
+    if (!id || !isAdmin) return;
+
+    const confirmed = confirm('このイベントを削除しますか？この操作は取り消せません。');
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/events/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('削除に失敗しました');
+      }
+
+      alert('イベントを削除しました');
+      router.push('/');
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(error instanceof Error ? error.message : '削除に失敗しました');
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <div className="page-container py-4">
@@ -89,7 +118,7 @@ export default function EventDetail() {
             ))}
           </div>
 
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex gap-2 flex-wrap">
             <a href={gmapsUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="secondary">地図を開く</Button>
             </a>
@@ -97,6 +126,15 @@ export default function EventDetail() {
               <a href={ev.url} target="_blank" rel="noopener noreferrer">
                 <Button>公式ページ</Button>
               </a>
+            )}
+            {isAdmin && (
+              <Button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="bg-red-600 hover:bg-red-700 disabled:bg-red-400"
+              >
+                {deleting ? '削除中...' : 'イベントを削除'}
+              </Button>
             )}
           </div>
 

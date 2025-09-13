@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
+import { useAuth } from '@/hooks/useAuth';
 
 type Review = { id: string; stars: number; childAge: string; text: string; createdAt: string };
 type Spot = {
@@ -26,7 +27,9 @@ export default function SpotDetail() {
   const [spot, setSpot] = useState<Spot | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isAdmin } = useAuth();
   // review is posted in /reviews/new
 
   useEffect(() => {
@@ -51,6 +54,58 @@ export default function SpotDetail() {
   function goReview() {
     if (!id) return;
     router.push(`/reviews/new?spotId=${id}`);
+  }
+
+  async function handleDelete() {
+    if (!id || !isAdmin) return;
+
+    const confirmed = confirm('このスポットを削除しますか？この操作は取り消せません。');
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/spots/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('削除に失敗しました');
+      }
+
+      alert('スポットを削除しました');
+      router.push('/');
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(error instanceof Error ? error.message : '削除に失敗しました');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function handleDeleteReview(reviewId: string) {
+    if (!isAdmin) return;
+
+    const confirmed = confirm('このレビューを削除しますか？');
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/reviews/${reviewId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('削除に失敗しました');
+      }
+
+      const refreshResponse = await fetch(`/api/spots/${id}`);
+      if (refreshResponse.ok) {
+        const refreshedSpot = await refreshResponse.json();
+        setSpot(refreshedSpot);
+      }
+    } catch (error) {
+      console.error('Delete review error:', error);
+      alert(error instanceof Error ? error.message : 'レビューの削除に失敗しました');
+    }
   }
 
   async function handleImageUpload(file: File) {
@@ -255,11 +310,20 @@ export default function SpotDetail() {
           </div>
 
           {/* Actions */}
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex gap-2 flex-wrap">
             <a href={gmapsUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="secondary">地図を開く</Button>
             </a>
             <Button onClick={goReview}>レビューを書く</Button>
+            {isAdmin && (
+              <Button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="bg-red-600 hover:bg-red-700 disabled:bg-red-400"
+              >
+                {deleting ? '削除中...' : 'スポットを削除'}
+              </Button>
+            )}
           </div>
 
           {/* Reviews */}
@@ -269,9 +333,21 @@ export default function SpotDetail() {
               {spot.reviews.map((r) => (
                 <Card className="my-2" key={r.id}>
                   <CardContent>
-                    <div className="font-semibold">⭐ {r.stars} / 子年齢: {r.childAge}</div>
-                    <div className="whitespace-pre-wrap">{r.text}</div>
-                    <div className="text-gray-500 text-xs">{new Date(r.createdAt).toLocaleString()}</div>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="font-semibold">⭐ {r.stars} / 子年齢: {r.childAge}</div>
+                        <div className="whitespace-pre-wrap">{r.text}</div>
+                        <div className="text-gray-500 text-xs">{new Date(r.createdAt).toLocaleString()}</div>
+                      </div>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteReview(r.id)}
+                          className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-600 hover:bg-red-200 rounded"
+                        >
+                          削除
+                        </button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
