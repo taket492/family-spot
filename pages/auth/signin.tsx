@@ -29,7 +29,14 @@ export default function SignIn() {
       if (result?.error) {
         setError('メールアドレスまたはパスワードが間違っています');
       } else if (result?.ok) {
-        router.push((callbackUrl as string) || '/');
+        // ログイン成功時の処理を改善
+        const redirectUrl = (callbackUrl as string) || '/';
+        
+        // セッションが確実に更新されるまで少し待つ
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // ページをリフレッシュしてからリダイレクト
+        window.location.href = redirectUrl;
       }
     } catch (err) {
       setError('ログインに失敗しました');
