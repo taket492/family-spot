@@ -20,6 +20,12 @@ export default function AuthButton() {
         >
           マイ記録
         </Link>
+        <Link
+          href="/families"
+          className="text-sm text-purple-600 hover:text-purple-800"
+        >
+          家族
+        </Link>
         <button
           onClick={() => signOut({ callbackUrl: '/' })}
           className="text-sm text-red-600 hover:text-red-800"

@@ -21,12 +21,31 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
 async function handlePost(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query as { id: string };
   const userId = req.userId!;
-  const { status, visitedAt, notes } = req.body;
+  const { status, visitedAt, notes, sharingLevel, familyId } = req.body;
 
-  console.log('Spot visit API - POST:', { id, userId, status, visitedAt, notes });
+  console.log('Spot visit API - POST:', { id, userId, status, visitedAt, notes, sharingLevel, familyId });
 
   if (!['visited', 'want_to_visit', 'favorite'].includes(status)) {
     return res.status(400).json({ error: 'Invalid status' });
+  }
+
+  if (!['private', 'family'].includes(sharingLevel)) {
+    return res.status(400).json({ error: 'Invalid sharing level' });
+  }
+
+  if (sharingLevel === 'family' && familyId) {
+    const isFamilyMember = await prisma.familyMember.findUnique({
+      where: {
+        familyId_userId: {
+          familyId,
+          userId,
+        },
+      },
+    });
+
+    if (!isFamilyMember) {
+      return res.status(403).json({ error: 'Not a member of the specified family' });
+    }
   }
 
   try {
@@ -41,6 +60,8 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
         status,
         visitedAt: visitedAt ? new Date(visitedAt) : null,
         notes,
+        sharingLevel: sharingLevel || 'private',
+        familyId: sharingLevel === 'family' ? familyId : null,
       },
       create: {
         userId,
@@ -48,6 +69,8 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
         status,
         visitedAt: visitedAt ? new Date(visitedAt) : null,
         notes,
+        sharingLevel: sharingLevel || 'private',
+        familyId: sharingLevel === 'family' ? familyId : null,
       },
     });
 
