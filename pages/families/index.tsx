@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
 import { clientCache } from '@/lib/cache';
+import { useOptimisticList } from '@/hooks/useOptimisticUpdate';
+import { OptimisticIndicator, CardSkeleton } from '@/components/ui/LoadingStates';
+import { FamilyLink } from '@/components/ui/PrefetchLink';
 
 type Family = {
   id: string;
@@ -26,7 +29,7 @@ type Family = {
 export default function Families() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
-  const [families, setFamilies] = useState<Family[]>([]);
+  const optimisticFamilies = useOptimisticList<Family>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(false);
@@ -40,7 +43,7 @@ export default function Families() {
     if (!forceRefresh) {
       const cached = clientCache.get<Family[]>(cacheKey);
       if (cached) {
-        setFamilies(cached);
+        optimisticFamilies.setData(cached);
         setLoading(false);
         return;
       }
@@ -51,7 +54,7 @@ export default function Families() {
       if (response.ok) {
         const data = await response.json();
         console.log('Families loaded:', data);
-        setFamilies(data);
+        optimisticFamilies.setData(data);
         clientCache.set(cacheKey, data, 60); // Cache for 1 minute
       } else {
         console.error('Failed to load families');
@@ -79,63 +82,126 @@ export default function Families() {
     if (!createForm.name.trim() || submitting) return;
 
     setSubmitting(true);
-    try {
-      const response = await fetch('/api/families', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(createForm)
-      });
 
-      if (response.ok) {
-        const newFamily = await response.json();
-        setFamilies(prev => [newFamily, ...prev]);
-        setCreateForm({ name: '', description: '' });
-        setShowCreateForm(false);
-        clientCache.delete('families-list'); // Invalidate cache
-      } else {
-        const error = await response.json();
-        alert(error.error || '家族の作成に失敗しました');
+    // Create optimistic family data
+    const optimisticFamily: Family = {
+      id: `temp-${Date.now()}`,
+      name: createForm.name,
+      description: createForm.description || null,
+      createdAt: new Date().toISOString(),
+      creator: {
+        id: 'current-user',
+        name: 'あなた',
+        email: 'current@user.email'
+      },
+      _count: {
+        members: 1,
+        spotVisits: 0,
+        eventVisits: 0
       }
+    };
+
+    try {
+      await optimisticFamilies.addItem(
+        optimisticFamily,
+        async () => {
+          const response = await fetch('/api/families', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(createForm)
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || '家族の作成に失敗しました');
+          }
+
+          return await response.json();
+        },
+        {
+          onSuccess: () => {
+            setCreateForm({ name: '', description: '' });
+            setShowCreateForm(false);
+            clientCache.delete('families-list');
+          },
+          onError: (error) => {
+            alert(error.message);
+          },
+          cacheKey: 'families-list'
+        }
+      );
     } catch (error) {
       console.error('Failed to create family:', error);
-      alert('家族の作成に失敗しました');
     } finally {
       setSubmitting(false);
     }
-  }, [createForm, submitting]);
+  }, [createForm, submitting, optimisticFamilies]);
 
   const joinFamily = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteCode.trim() || submitting) return;
 
     setSubmitting(true);
-    try {
-      const response = await fetch('/api/families/join-by-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteCode: inviteCode.trim() })
-      });
 
-      if (response.ok) {
-        const result = await response.json();
-        setInviteCode('');
-        setShowJoinForm(false);
-        clientCache.delete('families-list'); // Invalidate cache
-        loadFamilies(true); // Force refresh families list
-        alert(`${result.member.family.name} に参加しました！`);
-      } else {
-        const error = await response.json();
-        alert(error.error || '家族への参加に失敗しました');
+    // Create optimistic family data for joining
+    const optimisticFamily: Family = {
+      id: `joining-${Date.now()}`,
+      name: '参加中...',
+      description: null,
+      createdAt: new Date().toISOString(),
+      creator: {
+        id: 'unknown',
+        name: '招待者',
+        email: 'unknown@email.com'
+      },
+      _count: {
+        members: 1,
+        spotVisits: 0,
+        eventVisits: 0
       }
+    };
+
+    try {
+      await optimisticFamilies.addItem(
+        optimisticFamily,
+        async () => {
+          const response = await fetch('/api/families/join-by-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inviteCode: inviteCode.trim() })
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || '家族への参加に失敗しました');
+          }
+
+          const result = await response.json();
+          return result.member.family;
+        },
+        {
+          onSuccess: (familyList) => {
+            const joinedFamily = familyList[familyList.length - 1];
+            setInviteCode('');
+            setShowJoinForm(false);
+            clientCache.delete('families-list');
+            alert(`${joinedFamily.name} に参加しました！`);
+          },
+          onError: (error) => {
+            alert(error.message);
+          },
+          cacheKey: 'families-list'
+        }
+      );
     } catch (error) {
       console.error('Failed to join family:', error);
-      alert('家族への参加に失敗しました');
     } finally {
       setSubmitting(false);
     }
-  }, [inviteCode, submitting, loadFamilies]);
+  }, [inviteCode, submitting, optimisticFamilies]);
 
   const memoizedFamiliesList = useMemo(() => {
+    const families = optimisticFamilies.data || [];
     if (families.length === 0) {
       return (
         <div className="text-center py-12">
@@ -186,61 +252,35 @@ export default function Families() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Link href={`/families/${family.id}/visits`}>
+              <FamilyLink familyId={family.id} page="/visits">
                 <Button size="sm" variant="primary">
                   記録を見る
                 </Button>
-              </Link>
-              <Link href={`/families/${family.id}`}>
+              </FamilyLink>
+              <FamilyLink familyId={family.id}>
                 <Button size="sm" variant="secondary">
                   管理
                 </Button>
-              </Link>
+              </FamilyLink>
             </div>
           </div>
         </CardContent>
       </Card>
     ));
-  }, [families]);
+  }, [optimisticFamilies.data]);
 
   if (isLoading || loading) {
     return (
       <div className="page-container py-4">
-        <div className="animate-pulse">
-          <div className="flex items-center justify-between mb-6">
-            <div className="h-8 bg-gray-200 rounded w-32"></div>
-            <div className="flex gap-2">
-              <div className="h-10 bg-gray-200 rounded w-24"></div>
-              <div className="h-10 bg-gray-200 rounded w-24"></div>
-            </div>
+        <div className="flex items-center justify-between mb-6 animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-32"></div>
+          <div className="flex gap-2">
+            <div className="h-10 bg-gray-200 rounded w-24"></div>
+            <div className="h-10 bg-gray-200 rounded w-24"></div>
           </div>
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="border rounded-lg p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="h-6 bg-gray-200 rounded w-24"></div>
-                      <div className="h-5 bg-gray-200 rounded w-16"></div>
-                    </div>
-                    <div className="h-4 bg-gray-200 rounded w-48 mb-3"></div>
-                    <div className="flex gap-4 mb-3">
-                      <div className="h-4 bg-gray-200 rounded w-20"></div>
-                      <div className="h-4 bg-gray-200 rounded w-24"></div>
-                    </div>
-                    <div className="flex gap-4">
-                      <div className="h-4 bg-gray-200 rounded w-16"></div>
-                      <div className="h-4 bg-gray-200 rounded w-20"></div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="h-8 bg-gray-200 rounded w-20"></div>
-                    <div className="h-8 bg-gray-200 rounded w-16"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        </div>
+        <div className="space-y-4">
+          <CardSkeleton count={3} />
         </div>
       </div>
     );
@@ -248,6 +288,7 @@ export default function Families() {
 
   return (
     <div className="page-container py-4">
+      <OptimisticIndicator isOptimistic={optimisticFamilies.isOptimistic} />
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">家族グループ</h1>

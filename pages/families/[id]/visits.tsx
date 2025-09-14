@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
-import { OptimizedImage } from '@/components/ui/OptimizedImage';
+import { cache } from '@/lib/advancedCache';
+import { DynamicOptimizedImage as OptimizedImage, DynamicStatsChart } from '@/components/ui/DynamicComponents';
+import { ListSkeleton, CardSkeleton } from '@/components/ui/LoadingStates';
 
 type FamilyVisitData = {
   spots: Array<{
@@ -91,8 +93,33 @@ export default function FamilyVisits() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [family, setFamily] = useState<any>(null);
 
-  const loadFamilyAndVisits = useCallback(async () => {
+  const loadFamilyAndVisits = useCallback(async (forceRefresh = false) => {
     if (!id || typeof id !== 'string') return;
+
+    const familyCacheKey = `family-${id}`;
+    const visitsCacheKey = `family-${id}-visits`;
+
+    // Try to load from cache first
+    if (!forceRefresh) {
+      try {
+        const [cachedFamily, cachedVisits] = await Promise.all([
+          cache.get(familyCacheKey),
+          cache.get(visitsCacheKey)
+        ]);
+
+        if (cachedFamily && cachedVisits) {
+          setFamily(cachedFamily);
+          setVisitData(cachedVisits);
+          setLoading(false);
+
+          // Background refresh
+          setTimeout(() => loadFamilyAndVisits(true), 1000);
+          return;
+        }
+      } catch (error) {
+        console.warn('Cache read failed:', error);
+      }
+    }
 
     try {
       const [familyResponse, visitsResponse] = await Promise.all([
@@ -109,6 +136,18 @@ export default function FamilyVisits() {
         console.log('Family visits data loaded:', visitsData);
         setFamily(familyData);
         setVisitData(visitsData);
+
+        // Cache the data with stale-while-revalidate strategy
+        await Promise.all([
+          cache.set(familyCacheKey, familyData, {
+            ttl: 300000, // 5 minutes
+            staleWhileRevalidate: 60000 // 1 minute
+          }),
+          cache.set(visitsCacheKey, visitsData, {
+            ttl: 120000, // 2 minutes (visits change more frequently)
+            staleWhileRevalidate: 30000 // 30 seconds
+          })
+        ]);
       } else {
         console.error('Failed to load family data');
         router.push('/families');
@@ -135,13 +174,17 @@ export default function FamilyVisits() {
   if (isLoading || loading) {
     return (
       <div className="page-container py-4">
-        <div className="animate-pulse">
+        <div className="animate-pulse mb-6">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="space-y-3">
-            <div className="h-20 bg-gray-200 rounded"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
+          <div className="flex gap-2 mb-4">
+            <div className="h-10 bg-gray-200 rounded w-20"></div>
+            <div className="h-10 bg-gray-200 rounded w-20"></div>
+            <div className="h-10 bg-gray-200 rounded w-20"></div>
           </div>
+        </div>
+        <div className="grid gap-6">
+          <CardSkeleton count={1} />
+          <ListSkeleton count={4} />
         </div>
       </div>
     );

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
 import { clientCache } from '@/lib/cache';
+import { cache } from '@/lib/advancedCache';
+import { CardSkeleton, ButtonSkeleton } from '@/components/ui/LoadingStates';
 
 type Family = {
   id: string;
@@ -48,15 +50,32 @@ export default function FamilyDetails() {
   const loadFamily = useCallback(async (forceRefresh = false) => {
     if (!id || typeof id !== 'string') return;
 
-    const cacheKey = `family-${id}`;
+    const cacheKey = `family-${id}-details`;
 
+    // Try advanced cache first
     if (!forceRefresh) {
-      const cached = clientCache.get<Family>(cacheKey);
-      if (cached) {
-        setFamily(cached);
-        setEditForm({ name: cached.name, description: cached.description || '' });
-        setLoading(false);
-        return;
+      try {
+        const cached = await cache.get<Family>(cacheKey);
+        if (cached) {
+          setFamily(cached);
+          setEditForm({ name: cached.name, description: cached.description || '' });
+          setLoading(false);
+
+          // Background refresh after 1 second
+          setTimeout(() => loadFamily(true), 1000);
+          return;
+        }
+      } catch (error) {
+        console.warn('Advanced cache read failed, falling back to simple cache:', error);
+
+        // Fallback to simple cache
+        const cached = clientCache.get<Family>(`family-${id}`);
+        if (cached) {
+          setFamily(cached);
+          setEditForm({ name: cached.name, description: cached.description || '' });
+          setLoading(false);
+          return;
+        }
       }
     }
 
@@ -67,7 +86,13 @@ export default function FamilyDetails() {
         console.log('Family loaded:', data);
         setFamily(data);
         setEditForm({ name: data.name, description: data.description || '' });
-        clientCache.set(cacheKey, data, 30); // Cache for 30 seconds
+
+        // Cache with both systems
+        clientCache.set(`family-${id}`, data, 30);
+        await cache.set(cacheKey, data, {
+          ttl: 300000, // 5 minutes
+          staleWhileRevalidate: 60000 // 1 minute
+        });
       } else {
         console.error('Failed to load family');
         router.push('/families');
@@ -207,10 +232,15 @@ export default function FamilyDetails() {
   if (isLoading || loading) {
     return (
       <div className="page-container py-4">
-        <div className="animate-pulse">
+        <div className="animate-pulse mb-6">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-32 bg-gray-200 rounded mb-4"></div>
-          <div className="h-20 bg-gray-200 rounded"></div>
+          <div className="flex gap-2 mb-4">
+            <ButtonSkeleton />
+            <ButtonSkeleton variant="secondary" />
+          </div>
+        </div>
+        <div className="space-y-6">
+          <CardSkeleton count={2} />
         </div>
       </div>
     );

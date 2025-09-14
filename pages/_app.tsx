@@ -4,6 +4,7 @@ import { Noto_Sans_JP, Inter } from 'next/font/google';
 import Head from 'next/head';
 import { useEffect } from 'react';
 import { SessionProvider } from 'next-auth/react';
+import { NavPrefetch } from '@/components/ui/PrefetchLink';
 
 const noto = Noto_Sans_JP({
   subsets: ['latin'],
@@ -32,6 +33,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
   return (
     <SessionProvider session={session}>
       <div className={`${noto.variable} ${inter.variable}`}>
+        <NavPrefetch />
         <Head>
           <meta name="theme-color" content="#4CAF50" />
           <meta name="mobile-web-app-capable" content="yes" />

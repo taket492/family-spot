@@ -10,6 +10,55 @@ const nextConfig = {
   // Enable package import optimization
   experimental: {
     optimizePackageImports: ['maplibre-gl'],
+    optimizeCss: true,
+    optimizeServerReact: true,
+  },
+  // Compiler optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn']
+    } : false,
+  },
+  // Production optimization
+  compress: true,
+  // Bundle optimization
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Optimize bundle splitting
+    if (!dev && !isServer) {
+      config.optimization.splitChunks = {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          ...config.optimization.splitChunks.cacheGroups,
+          // Separate vendor libraries
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+            priority: 10,
+          },
+          // Map library in separate chunk
+          maplibre: {
+            test: /[\\/]node_modules[\\/]maplibre-gl[\\/]/,
+            name: 'maplibre',
+            chunks: 'all',
+            priority: 20,
+          },
+          // React libraries
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+            name: 'react',
+            chunks: 'all',
+            priority: 30,
+          },
+        },
+      };
+    }
+
+    // Tree shaking optimization
+    config.optimization.usedExports = true;
+    config.optimization.sideEffects = false;
+
+    return config;
   },
   images: {
     remotePatterns: [
