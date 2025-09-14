@@ -237,6 +237,9 @@ export default function FamilyDetails() {
           <Link href={`/families/${family.id}/visits`}>
             <Button variant="primary">記録を見る</Button>
           </Link>
+          <Link href="/">
+            <Button variant="outline">トップ</Button>
+          </Link>
           <Link href="/families">
             <Button variant="secondary">戻る</Button>
           </Link>

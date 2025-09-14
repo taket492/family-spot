@@ -171,6 +171,9 @@ export default function FamilyVisits() {
           <p className="text-gray-600 text-sm">{family.description}</p>
         </div>
         <div className="flex gap-2">
+          <Link href="/">
+            <Button variant="outline">トップ</Button>
+          </Link>
           <Link href={`/families/${id}`}>
             <Button variant="secondary">家族管理</Button>
           </Link>

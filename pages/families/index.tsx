@@ -249,7 +249,12 @@ export default function Families() {
   return (
     <div className="page-container py-4">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">家族グループ</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">家族グループ</h1>
+          <Link href="/">
+            <Button variant="outline" size="sm">← トップ</Button>
+          </Link>
+        </div>
         <div className="flex gap-2">
           <Button
             onClick={() => setShowCreateForm(true)}
