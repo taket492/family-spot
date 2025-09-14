@@ -218,13 +218,13 @@ export default function MyVisits() {
             <CardContent className="p-4">
               <div className="flex gap-4">
                 {visit.spot.images?.[0] && (
-                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                  <div className="shrink-0 overflow-hidden size-16 bg-gray-100 rounded-lg">
                     <OptimizedImage
                       src={visit.spot.images[0]}
                       alt={visit.spot.name}
                       width={64}
                       height={64}
-                      className="object-cover w-full h-full"
+                      className="object-cover size-full"
                     />
                   </div>
                 )}
@@ -236,7 +236,7 @@ export default function MyVisits() {
                       </Link>
                       <div className="text-sm text-gray-600">{visit.spot.city}</div>
                     </div>
-                    <div className={`px-2 py-1 rounded text-xs ${SPOT_STATUS_CONFIG[visit.status as keyof typeof SPOT_STATUS_CONFIG]?.color}`}>
+                    <div className={`px-2 py-1 text-xs rounded ${SPOT_STATUS_CONFIG[visit.status as keyof typeof SPOT_STATUS_CONFIG]?.color}`}>
                       {SPOT_STATUS_CONFIG[visit.status as keyof typeof SPOT_STATUS_CONFIG]?.icon} {SPOT_STATUS_CONFIG[visit.status as keyof typeof SPOT_STATUS_CONFIG]?.label}
                     </div>
                   </div>
@@ -265,13 +265,13 @@ export default function MyVisits() {
             <CardContent className="p-4">
               <div className="flex gap-4">
                 {visit.event.images?.[0] && (
-                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                  <div className="shrink-0 overflow-hidden size-16 bg-gray-100 rounded-lg">
                     <OptimizedImage
                       src={visit.event.images[0]}
                       alt={visit.event.title}
                       width={64}
                       height={64}
-                      className="object-cover w-full h-full"
+                      className="object-cover size-full"
                     />
                   </div>
                 )}
@@ -286,7 +286,7 @@ export default function MyVisits() {
                         {new Date(visit.event.startAt).toLocaleString()}
                       </div>
                     </div>
-                    <div className={`px-2 py-1 rounded text-xs ${EVENT_STATUS_CONFIG[visit.status as keyof typeof EVENT_STATUS_CONFIG]?.color}`}>
+                    <div className={`px-2 py-1 text-xs rounded ${EVENT_STATUS_CONFIG[visit.status as keyof typeof EVENT_STATUS_CONFIG]?.color}`}>
                       {EVENT_STATUS_CONFIG[visit.status as keyof typeof EVENT_STATUS_CONFIG]?.icon} {EVENT_STATUS_CONFIG[visit.status as keyof typeof EVENT_STATUS_CONFIG]?.label}
                     </div>
                   </div>

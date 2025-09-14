@@ -34,17 +34,6 @@ export default function Families() {
   const [inviteCode, setInviteCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (isLoading) return;
-
-    if (!isAuthenticated) {
-      router.push('/auth/signin');
-      return;
-    }
-
-    loadFamilies();
-  }, [isAuthenticated, isLoading, router, loadFamilies]);
-
   const loadFamilies = useCallback(async (forceRefresh = false) => {
     const cacheKey = 'families-list';
 
@@ -73,6 +62,17 @@ export default function Families() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
+      router.push('/auth/signin');
+      return;
+    }
+
+    loadFamilies();
+  }, [isAuthenticated, isLoading, router, loadFamilies]);
 
   const createFamily = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,7 +165,7 @@ export default function Families() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h3 className="text-lg font-semibold">{family.name}</h3>
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
                   {family._count.members} メンバー
                 </span>
               </div>

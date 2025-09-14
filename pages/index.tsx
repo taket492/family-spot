@@ -101,7 +101,7 @@ export default function Home({ featured }: HomeProps) {
       {/* Hero */}
       <div className="text-center py-8 animate-fade-in">
         <div className="mb-6">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-primary shadow-lg mb-4 animate-bounce-soft">
+          <div className="inline-flex items-center justify-center size-20 mb-4 bg-gradient-primary rounded-3xl shadow-lg animate-bounce-soft">
             <svg width="48" height="48" viewBox="0 0 64 64" aria-hidden className="text-white">
               <circle cx="24" cy="26" r="3" fill="currentColor" />
               <circle cx="40" cy="26" r="3" fill="currentColor" />
@@ -123,13 +123,13 @@ export default function Home({ featured }: HomeProps) {
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-3 p-2 rounded-2xl bg-white shadow-card hover:shadow-card-hover transition-all duration-200 border border-neutral-100">
             <div className="flex-1 flex items-center px-4 py-3">
-              <div className="w-5 h-5 text-primary-500 mr-3">
+              <div className="mr-3 size-5 text-primary-500">
                 <svg fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
                 </svg>
               </div>
               <input
-                className="w-full bg-transparent outline-none text-base placeholder:text-neutral-400"
+                className="w-full text-base bg-transparent outline-none placeholder:text-neutral-400"
                 placeholder="キーワードで探す（例：公園、授乳室、屋内）"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -240,8 +240,8 @@ export default function Home({ featured }: HomeProps) {
                       priority={false}
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300 flex items-center justify-center">
-                      <svg className="h-12 w-12 text-neutral-400" fill="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center justify-center size-full bg-gradient-to-br from-neutral-200 to-neutral-300">
+                      <svg className="w-12 h-12 text-neutral-400" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                       </svg>
                     </div>
@@ -267,7 +267,7 @@ export default function Home({ featured }: HomeProps) {
           <Link href="/search">
             <Button variant="ghost" size="lg" className="font-semibold">
               もっと見る
-              <svg className="ml-2 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="ml-2 size-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
               </svg>
             </Button>
@@ -293,10 +293,10 @@ export default function Home({ featured }: HomeProps) {
                     <img
                       src={e.images[0]}
                       alt={e.title}
-                      className="aspect-[4/3] w-full object-cover rounded-t-2xl bg-neutralLight"
+                      className="aspect-[4/3] w-full object-cover rounded-t-2xl bg-neutral-200"
                     />
                   ) : (
-                    <div className="aspect-[4/3] w-full bg-neutralLight rounded-t-2xl overflow-hidden" />
+                    <div className="aspect-[4/3] w-full bg-neutral-200 rounded-t-2xl overflow-hidden" />
                   )}
                   <CardContent>
                     <div className="text-lg font-bold">{e.title}</div>

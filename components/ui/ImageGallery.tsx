@@ -78,7 +78,7 @@ export function ImageGallery({
         />
         
         {/* Image counter */}
-        <div className="absolute top-4 right-4 bg-black/50 text-white text-sm px-2 py-1 rounded">
+        <div className="absolute top-4 right-4 px-2 py-1 text-sm text-white bg-black/50 rounded">
           {selectedIndex + 1} / {displayImages.length}
         </div>
         
@@ -87,7 +87,7 @@ export function ImageGallery({
           <>
             <button
               onClick={() => setSelectedIndex(prev => prev === 0 ? displayImages.length - 1 : prev - 1)}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+              className="absolute top-1/2 left-4 p-2 text-white transition-colors bg-black/50 rounded-full -translate-y-1/2 hover:bg-black/70"
               aria-label="前の画像"
             >
               <svg className="size-4" fill="currentColor" viewBox="0 0 20 20">
@@ -96,7 +96,7 @@ export function ImageGallery({
             </button>
             <button
               onClick={() => setSelectedIndex(prev => prev === displayImages.length - 1 ? 0 : prev + 1)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+              className="absolute top-1/2 right-4 p-2 text-white transition-colors bg-black/50 rounded-full -translate-y-1/2 hover:bg-black/70"
               aria-label="次の画像"
             >
               <svg className="size-4" fill="currentColor" viewBox="0 0 20 20">
@@ -120,9 +120,9 @@ export function ImageGallery({
             }}
             className={`
               relative aspect-square rounded overflow-hidden transition-all duration-200
-              ${selectedIndex === index 
-                ? 'ring-2 ring-primary-500 scale-105' 
-                : 'hover:scale-105 opacity-80 hover:opacity-100'
+              ${selectedIndex === index
+                ? 'scale-105 ring-2 ring-primary-500'
+                : 'opacity-80 hover:scale-105 hover:opacity-100'
               }
             `}
             aria-label={`画像 ${index + 1} を表示`}

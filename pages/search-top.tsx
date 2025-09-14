@@ -28,7 +28,7 @@ export default function SearchTop() {
       <div className="page-container py-8">
         {/* Header */}
         <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-primary shadow-lg mb-6 animate-bounce-soft">
+          <div className="inline-flex items-center justify-center size-20 rounded-3xl bg-gradient-primary shadow-lg mb-6 animate-bounce-soft">
             <span className="text-3xl">🔍</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent mb-4">
@@ -44,13 +44,13 @@ export default function SearchTop() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between text-sm text-neutral-600">
               <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="size-4 mr-2 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                 </svg>
                 <span className="font-medium">静岡県</span>
               </div>
               <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2 text-accent-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="size-4 mr-2 text-accent-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 <span>お近くのスポットを表示</span>
@@ -65,8 +65,8 @@ export default function SearchTop() {
             <h2 className="text-xl font-semibold text-neutral-800 mb-4">キーワード検索</h2>
             <div className="flex gap-3">
               <div className="flex-1 relative">
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                  <svg className="w-5 h-5 text-neutral-400" fill="currentColor" viewBox="0 0 20 20">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                  <svg className="size-5 text-neutral-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
                   </svg>
                 </div>
@@ -100,7 +100,7 @@ export default function SearchTop() {
                 onClick={() => goSearch(category.name)}
               >
                 <CardContent className="p-6 text-center">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${category.color} shadow-lg mb-4 text-3xl group-hover:scale-110 transition-transform duration-200`}>
+                  <div className={`inline-flex items-center justify-center size-16 rounded-2xl bg-gradient-to-br ${category.color} shadow-lg mb-4 text-3xl group-hover:scale-110 transition-transform duration-200`}>
                     {category.icon}
                   </div>
                   <h3 className="text-lg font-semibold text-neutral-800 group-hover:text-primary-600 transition-colors duration-200">

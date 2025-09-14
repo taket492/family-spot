@@ -98,10 +98,10 @@ export default function EventDetail() {
             <img
               src={ev.images[0]}
               alt={ev.title}
-              className="rounded-2xl w-full h-auto object-cover aspect-[4/3] bg-neutralLight"
+              className="rounded-2xl w-full h-auto object-cover aspect-[4/3] bg-neutral-200"
             />
           ) : (
-            <div className="rounded-2xl overflow-hidden bg-neutralLight aspect-[4/3]"></div>
+            <div className="rounded-2xl overflow-hidden bg-neutral-200 aspect-[4/3]"></div>
           )}
 
           <div className="mt-4">

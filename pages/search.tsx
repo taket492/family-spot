@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 const Map = dynamic(() => import('@/components/Map'), { 
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-neutral-100 animate-pulse flex items-center justify-center rounded-lg">
+    <div className="size-full bg-neutral-100 animate-pulse flex items-center justify-center rounded-lg">
       <div className="flex flex-col items-center space-y-2 text-neutral-500">
         <div className="size-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
         <p className="text-sm">地図を読み込み中...</p>
@@ -161,7 +161,7 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
     }
     run();
     return () => controller.abort();
-  }, [q, mode]);
+  }, [initialItems.length, initialQ, q, mode]);
 
   const mapSpots = useMemo(() => {
     if (mode === 'spots') return items.map(({ id, name, lat, lng, type }) => ({ id, name, lat, lng, type }));
@@ -213,7 +213,7 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
             onClick={() => router.push('/')}
             className="mb-4 -ml-2"
           >
-            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="size-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
             トップへ戻る
@@ -232,8 +232,8 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
           {/* Main Search */}
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <div className="flex-1 relative">
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                <svg className="w-5 h-5 text-neutral-400" fill="currentColor" viewBox="0 0 20 20">
+              <div className="absolute top-1/2 left-4 -translate-y-1/2">
+                <svg className="size-5 text-neutral-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
                 </svg>
               </div>
@@ -307,7 +307,7 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
           <p className="text-neutral-600" aria-live="polite">
             検索結果: {loading ? 
               <span className="inline-flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="mr-2 -ml-1 w-4 h-4 text-primary-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -332,8 +332,8 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
         {info ? (
           <Card className="mb-4 border-warning/20 bg-warning/5 animate-fade-in">
             <CardContent className="p-4">
-              <div className="flex items-center text-warning-700">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <div className="flex items-center text-warning">
+                <svg className="size-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
                 {info}
@@ -343,8 +343,8 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
         ) : sortMode !== 'distance' && !geo ? (
           <Card className="mb-4 border-info/20 bg-info/5">
             <CardContent className="p-3">
-              <div className="flex items-center text-info-700 text-sm">
-                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <div className="flex items-center text-info text-sm">
+                <svg className="size-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
                 現在地の許可で「近い順」が使えます
@@ -374,8 +374,8 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
             ) : sortedSpots.length === 0 ? (
               <Card className="text-center p-12 animate-fade-in">
                 <div className="mb-4">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-neutral-100 mb-4">
-                    <svg className="w-8 h-8 text-neutral-400" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="inline-flex items-center justify-center mb-4 size-16 bg-neutral-100 rounded-full">
+                    <svg className="size-8 text-neutral-400" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
                     </svg>
                   </div>
@@ -423,7 +423,7 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
                             </div>
                             <div className="flex items-center text-primary-600 font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                               詳細を見る
-                              <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                              <svg className="size-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                               </svg>
                             </div>

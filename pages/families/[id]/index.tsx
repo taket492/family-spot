@@ -45,17 +45,6 @@ export default function FamilyDetails() {
   const [submitting, setSubmitting] = useState(false);
   const [showInviteCode, setShowInviteCode] = useState(false);
 
-  useEffect(() => {
-    if (isLoading || !id) return;
-
-    if (!isAuthenticated) {
-      router.push('/auth/signin');
-      return;
-    }
-
-    loadFamily();
-  }, [isAuthenticated, isLoading, id, router, loadFamily]);
-
   const loadFamily = useCallback(async (forceRefresh = false) => {
     if (!id || typeof id !== 'string') return;
 
@@ -90,6 +79,17 @@ export default function FamilyDetails() {
       setLoading(false);
     }
   }, [id, router]);
+
+  useEffect(() => {
+    if (isLoading || !id) return;
+
+    if (!isAuthenticated) {
+      router.push('/auth/signin');
+      return;
+    }
+
+    loadFamily();
+  }, [isAuthenticated, isLoading, id, router, loadFamily]);
 
   const updateFamily = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,6 +196,14 @@ export default function FamilyDetails() {
     }
   }, [family?.inviteCode]);
 
+  const { currentUserMember, isCreator, isAdmin } = useMemo(() => {
+    if (!family) return { currentUserMember: null, isCreator: false, isAdmin: false };
+    const member = family.members.find(m => m.user.id === user?.id);
+    const creator = family.createdBy === user?.id;
+    const admin = member?.role === 'admin' || creator;
+    return { currentUserMember: member, isCreator: creator, isAdmin: admin };
+  }, [family, user?.id]);
+
   if (isLoading || loading) {
     return (
       <div className="page-container py-4">
@@ -207,14 +215,6 @@ export default function FamilyDetails() {
       </div>
     );
   }
-
-  const { currentUserMember, isCreator, isAdmin } = useMemo(() => {
-    if (!family) return { currentUserMember: null, isCreator: false, isAdmin: false };
-    const member = family.members.find(m => m.user.id === user?.id);
-    const creator = family.createdBy === user?.id;
-    const admin = member?.role === 'admin' || creator;
-    return { currentUserMember: member, isCreator: creator, isAdmin: admin };
-  }, [family?.members, family?.createdBy, user?.id]);
 
   if (!family) {
     return (
@@ -379,7 +379,7 @@ export default function FamilyDetails() {
             {family.members.map((member) => (
               <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <div className="flex items-center justify-center size-10 bg-blue-100 rounded-full">
                     <span className="text-blue-600 font-semibold">
                       {(member.user.name || member.user.email)[0].toUpperCase()}
                     </span>
@@ -388,12 +388,12 @@ export default function FamilyDetails() {
                     <div className="font-medium">
                       {member.user.name || member.user.email}
                       {member.user.id === family.createdBy && (
-                        <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
+                        <span className="ml-2 px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
                           作成者
                         </span>
                       )}
                       {member.role === 'admin' && member.user.id !== family.createdBy && (
-                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                        <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
                           管理者
                         </span>
                       )}
@@ -410,7 +410,7 @@ export default function FamilyDetails() {
                       <select
                         value={member.role}
                         onChange={(e) => updateMemberRole(member.user.id, e.target.value)}
-                        className="text-sm px-2 py-1 border rounded"
+                        className="px-2 py-1 text-sm border rounded"
                       >
                         <option value="member">メンバー</option>
                         <option value="admin">管理者</option>

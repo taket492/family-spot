@@ -76,7 +76,7 @@ export default function NewReview() {
                   <span
                     key={n}
                     onClick={() => setStars(n)}
-                    className={`cursor-pointer text-3xl select-none ${n <= stars ? 'text-brandYellow' : 'text-gray-300'}`}
+                    className={`cursor-pointer text-3xl select-none ${n <= stars ? 'text-secondary-400' : 'text-gray-300'}`}
                     aria-label={`${n}つ星を選択`}
                   >
                     ★

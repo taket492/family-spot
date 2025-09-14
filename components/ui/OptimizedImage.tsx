@@ -132,7 +132,7 @@ export function OptimizedImage({
         style={width && height ? { width, height } : {}}
         aria-label={`画像を読み込み中: ${alt}`}
       >
-        <svg className="h-8 w-8 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+        <svg className="w-8 h-8 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
           <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
         </svg>
       </div>
@@ -156,8 +156,8 @@ export function OptimizedImage({
           onLoadingComplete={handleLoadingComplete}
         />
         {isLoading && placeholder === 'empty' && (
-          <div className={`absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center ${className}`}>
-            <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+          <div className={`absolute inset-0 flex items-center justify-center bg-gray-200 animate-pulse ${className}`}>
+            <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
               <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
             </svg>
           </div>
@@ -183,8 +183,8 @@ export function OptimizedImage({
         onLoadingComplete={handleLoadingComplete}
       />
       {isLoading && placeholder === 'empty' && (
-        <div className={`absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center`}>
-          <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+        <div className={`absolute inset-0 flex items-center justify-center bg-gray-200 animate-pulse`}>
+          <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
           </svg>
         </div>

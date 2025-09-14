@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
 type VisitStatus = 'visited' | 'want_to_visit' | 'favorite' | null;
@@ -36,14 +36,7 @@ export default function VisitStatusButton({ type, itemId, itemName, className = 
   const statusConfig = type === 'spot' ? SPOT_STATUS_CONFIG : EVENT_STATUS_CONFIG;
   const statusOptions = Object.keys(statusConfig) as (keyof typeof statusConfig)[];
 
-  useEffect(() => {
-    if (!isAuthenticated || isLoading) return;
-
-    loadCurrentStatus();
-    loadFamilies();
-  }, [isAuthenticated, isLoading, itemId]);
-
-  async function loadFamilies() {
+  const loadFamilies = useCallback(async () => {
     try {
       const response = await fetch('/api/families');
       if (response.ok) {
@@ -56,9 +49,9 @@ export default function VisitStatusButton({ type, itemId, itemName, className = 
     } catch (error) {
       console.error('Failed to load families:', error);
     }
-  }
+  }, []);
 
-  async function loadCurrentStatus() {
+  const loadCurrentStatus = useCallback(async () => {
     try {
       const response = await fetch(`/api/visits/${type}s/${itemId}`);
       if (response.ok) {
@@ -68,7 +61,14 @@ export default function VisitStatusButton({ type, itemId, itemName, className = 
     } catch (error) {
       console.error('Failed to load visit status:', error);
     }
-  }
+  }, [type, itemId]);
+
+  useEffect(() => {
+    if (!isAuthenticated || isLoading) return;
+
+    loadCurrentStatus();
+    loadFamilies();
+  }, [isAuthenticated, isLoading, itemId, loadCurrentStatus, loadFamilies]);
 
   function selectStatusForUpdate(status: string) {
     setCurrentStatus(status as VisitStatus | EventVisitStatus);
@@ -148,11 +148,11 @@ export default function VisitStatusButton({ type, itemId, itemName, className = 
       <button
         onClick={() => setShowMenu(!showMenu)}
         disabled={isUpdating}
-        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+        className={`px-3 py-2 text-sm font-medium transition-colors rounded-lg ${
           currentStatus
             ? (statusConfig as any)[currentStatus]?.color || 'bg-gray-100 text-gray-700'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        } ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+            : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+        } ${isUpdating ? 'cursor-not-allowed opacity-50' : 'hover:opacity-80'}`}
       >
         {isUpdating ? (
           '更新中...'
@@ -167,12 +167,12 @@ export default function VisitStatusButton({ type, itemId, itemName, className = 
       </button>
 
       {showMenu && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
+        <div className="absolute top-full left-0 z-10 mt-1 min-w-[140px] bg-white border border-gray-200 rounded-lg shadow-lg">
           {statusOptions.map((status) => (
             <button
               key={status}
               onClick={() => selectStatusForUpdate(status)}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg"
+              className="w-full px-3 py-2 text-sm text-left first:rounded-t-lg hover:bg-gray-50"
             >
               {(statusConfig as any)[status].icon} {(statusConfig as any)[status].label}
             </button>
@@ -182,7 +182,7 @@ export default function VisitStatusButton({ type, itemId, itemName, className = 
               <div className="border-t border-gray-200" />
               <button
                 onClick={removeStatus}
-                className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                className="w-full px-3 py-2 text-sm text-left text-red-600 hover:bg-red-50"
               >
                 🗑️ 削除
               </button>
@@ -191,7 +191,7 @@ export default function VisitStatusButton({ type, itemId, itemName, className = 
           <div className="border-t border-gray-200" />
           <button
             onClick={() => setShowMenu(false)}
-            className="w-full px-3 py-2 text-left text-sm text-gray-500 hover:bg-gray-50 rounded-b-lg"
+            className="w-full px-3 py-2 text-sm text-left text-gray-500 rounded-b-lg hover:bg-gray-50"
           >
             キャンセル
           </button>
@@ -199,7 +199,7 @@ export default function VisitStatusButton({ type, itemId, itemName, className = 
       )}
 
       {showSharingOptions && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[280px]">
+        <div className="absolute top-full left-0 z-20 mt-1 min-w-[280px] bg-white border border-gray-200 rounded-lg shadow-lg">
           <div className="p-4">
             <h3 className="font-medium text-sm mb-3">記録の共有設定</h3>
             <div className="space-y-3">

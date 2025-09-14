@@ -202,7 +202,7 @@ export default function Map({ spots, onSelect }: Props) {
       map.remove();
       instanceRef.current = null;
     };
-  }, []);
+  }, [geojson, maptilerKey, onSelect]);
 
   useEffect(() => {
     const map = instanceRef.current;
