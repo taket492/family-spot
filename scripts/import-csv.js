@@ -3,18 +3,13 @@ const fs = require('fs');
 const path = require('path');
 const { parse } = require('csv-parse/sync');
 const { PrismaClient } = require('@prisma/client');
+const {
+  toArrayMaybe,
+  loadTagDictionary,
+  geocodeAddress,
+} = require('./ingest-utils');
 
-function toArrayMaybe(v) {
-  if (v == null) return [];
-  const s = String(v).trim();
-  if (!s) return [];
-  try {
-    const j = JSON.parse(s);
-    if (Array.isArray(j)) return j.map(String);
-  } catch (_) {}
-  // Fallback: split by comma or Japanese comma
-  return s.split(/[、,]/).map((t) => t.trim()).filter(Boolean);
-}
+// toArrayMaybe moved to ingest-utils
 
 function pick(obj, keys) {
   for (const k of keys) if (obj[k] != null && String(obj[k]).trim() !== '') return obj[k];
@@ -24,8 +19,12 @@ function pick(obj, keys) {
 async function main() {
   const file = process.argv[2];
   const dryRun = process.argv.includes('--dry-run');
+  const enableGeocode = process.argv.includes('--geocode');
+  const providerArg = (process.argv.find((a) => a.startsWith('--provider=')) || '').split('=')[1];
+  const dictArg = (process.argv.find((a) => a.startsWith('--dict=')) || '').split('=')[1];
+  const tagDictPath = dictArg || process.env.TAG_DICTIONARY_PATH || 'scripts/tag-dictionary.json';
   if (!file) {
-    console.error('Usage: npm run import:csv -- <path/to/file.csv> [--dry-run]');
+    console.error('Usage: npm run import:csv -- <path/to/file.csv> [--dry-run] [--geocode] [--provider google|nominatim] [--dict path/to/tag-dictionary.json]');
     process.exit(1);
   }
   const abs = path.resolve(process.cwd(), file);
@@ -38,6 +37,10 @@ async function main() {
   const rows = parse(input, { columns: true, skip_empty_lines: true, bom: true, trim: true });
   console.log('Parsed rows:', rows.length);
 
+  const tagNormalizer = loadTagDictionary(tagDictPath);
+
+  const provider = providerArg || process.env.GEOCODER || 'nominatim';
+  let geocodedCount = 0;
   const records = [];
   for (const r of rows) {
     const type = pick(r, ['type', '種類', 'カテゴリ']);
@@ -52,18 +55,34 @@ async function main() {
     const tagsRaw = pick(r, ['tags', 'タグ']);
     const imagesRaw = pick(r, ['images', '画像']);
 
-    const lat = latRaw != null ? Number(String(latRaw).replace(/[^0-9.\-]/g, '')) : undefined;
-    const lng = lngRaw != null ? Number(String(lngRaw).replace(/[^0-9.\-]/g, '')) : undefined;
+    let lat = latRaw != null ? Number(String(latRaw).replace(/[^0-9.\-]/g, '')) : undefined;
+    let lng = lngRaw != null ? Number(String(lngRaw).replace(/[^0-9.\-]/g, '')) : undefined;
+
+    // Attempt geocoding when lat/lng missing but we have enough address context
+    if (enableGeocode && (!Number.isFinite(lat) || !Number.isFinite(lng))) {
+      const geo = await geocodeAddress({ name, city, address, provider });
+      if (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lng)) {
+        lat = geo.lat;
+        lng = geo.lng;
+        if (!address && geo.address) r.address = geo.address; // enrich in output
+        geocodedCount += 1;
+      }
+    }
+
     if (!type || !name || !city || !Number.isFinite(lat) || !Number.isFinite(lng)) {
       console.warn('Skip row (missing required fields):', { type, name, city, lat, lng });
       continue;
     }
-    const tags = JSON.stringify(toArrayMaybe(tagsRaw));
+
+    const tagsArr = toArrayMaybe(tagsRaw);
+    const normalizedTags = tagNormalizer ? tagNormalizer.normalizeTags(tagsArr) : tagsArr;
+    const tags = JSON.stringify(normalizedTags);
     const images = JSON.stringify(toArrayMaybe(imagesRaw));
 
     records.push({ type: String(type), name: String(name), city: String(city), address: address ? String(address) : undefined, lat, lng, phone: phone ? String(phone) : undefined, tags, openHours: openHours ? String(openHours) : undefined, priceBand: priceBand ? String(priceBand) : undefined, images });
   }
 
+  if (enableGeocode) console.log('Geocoded rows:', geocodedCount);
   console.log('Ready to insert:', records.length);
   if (dryRun) {
     console.log('Dry-run mode: showing first 3 records');
@@ -91,4 +110,3 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

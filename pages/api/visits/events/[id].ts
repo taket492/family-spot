@@ -27,7 +27,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
     return res.status(400).json({ error: 'Invalid status' });
   }
 
-  if (!['private', 'family'].includes(sharingLevel)) {
+  if (sharingLevel && !['private', 'family'].includes(sharingLevel)) {
     return res.status(400).json({ error: 'Invalid sharing level' });
   }
 

@@ -3,6 +3,11 @@
     "name": "Google Sheet (Published CSV)",
     "type": "csv",
     "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-pBBpHjyFMdcPw8O4zTr6DIahy55-YwAQUIqC8zyQqVC5SLqb2xg9j4qCJ9pOAnhv4ByvRsIME1zD/pub?gid=0&single=true&output=csv"
+  },
+  {
+    "name": "Local Restaurants CSV",
+    "type": "csv",
+    "path": "data/restaurants.csv"
   }
 ]
 

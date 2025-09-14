@@ -85,7 +85,7 @@ export default function VisitStatusButton({ type, itemId, itemName, className = 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status,
-          sharingLevel: sharing,
+          sharingLevel: sharing || 'private',
           familyId: sharing === 'family' ? familyId : null,
           ...(status === 'visited' && { visitedAt: new Date().toISOString() }),
           ...(status === 'attended' && { attendedAt: new Date().toISOString() }),
