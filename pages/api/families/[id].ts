@@ -35,9 +35,18 @@ export default async function handler(
     }
 
     if (req.method === 'GET') {
+      const includeMembers = req.query.includeMembers === 'true';
+
       const family = await prisma.family.findUnique({
         where: { id },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          inviteCode: true,
+          createdBy: true,
+          createdAt: true,
+          updatedAt: true,
           creator: {
             select: {
               id: true,
@@ -45,8 +54,11 @@ export default async function handler(
               email: true
             }
           },
-          members: {
-            include: {
+          members: includeMembers ? {
+            select: {
+              id: true,
+              role: true,
+              joinedAt: true,
               user: {
                 select: {
                   id: true,
@@ -58,9 +70,10 @@ export default async function handler(
             orderBy: {
               joinedAt: 'asc'
             }
-          },
+          } : false,
           _count: {
             select: {
+              members: true,
               spotVisits: true,
               eventVisits: true
             }
@@ -72,6 +85,7 @@ export default async function handler(
         return res.status(404).json({ error: 'Family not found' });
       }
 
+      res.setHeader('Cache-Control', 'private, max-age=30, s-maxage=30');
       return res.status(200).json(family);
     }
 

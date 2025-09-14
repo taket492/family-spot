@@ -25,7 +25,11 @@ export default async function handler(
             }
           }
         },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
           creator: {
             select: {
               id: true,
@@ -33,19 +37,9 @@ export default async function handler(
               email: true
             }
           },
-          members: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true
-                }
-              }
-            }
-          },
           _count: {
             select: {
+              members: true,
               spotVisits: true,
               eventVisits: true
             }
@@ -56,6 +50,7 @@ export default async function handler(
         }
       });
 
+      res.setHeader('Cache-Control', 'private, max-age=60, s-maxage=60');
       return res.status(200).json(families);
     }
 

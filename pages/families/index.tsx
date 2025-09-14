@@ -1,32 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
+import { clientCache } from '@/lib/cache';
 
 type Family = {
   id: string;
   name: string;
   description: string | null;
-  inviteCode: string;
   createdAt: string;
   creator: {
     id: string;
     name: string;
     email: string;
   };
-  members: Array<{
-    id: string;
-    role: string;
-    joinedAt: string;
-    user: {
-      id: string;
-      name: string;
-      email: string;
-    };
-  }>;
   _count: {
+    members: number;
     spotVisits: number;
     eventVisits: number;
   };
@@ -52,15 +43,27 @@ export default function Families() {
     }
 
     loadFamilies();
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, loadFamilies]);
 
-  async function loadFamilies() {
+  const loadFamilies = useCallback(async (forceRefresh = false) => {
+    const cacheKey = 'families-list';
+
+    if (!forceRefresh) {
+      const cached = clientCache.get<Family[]>(cacheKey);
+      if (cached) {
+        setFamilies(cached);
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const response = await fetch('/api/families');
       if (response.ok) {
         const data = await response.json();
         console.log('Families loaded:', data);
         setFamilies(data);
+        clientCache.set(cacheKey, data, 60); // Cache for 1 minute
       } else {
         console.error('Failed to load families');
       }
@@ -69,9 +72,9 @@ export default function Families() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  async function createFamily(e: React.FormEvent) {
+  const createFamily = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createForm.name.trim() || submitting) return;
 
@@ -88,6 +91,7 @@ export default function Families() {
         setFamilies(prev => [newFamily, ...prev]);
         setCreateForm({ name: '', description: '' });
         setShowCreateForm(false);
+        clientCache.delete('families-list'); // Invalidate cache
       } else {
         const error = await response.json();
         alert(error.error || '家族の作成に失敗しました');
@@ -98,9 +102,9 @@ export default function Families() {
     } finally {
       setSubmitting(false);
     }
-  }
+  }, [createForm, submitting]);
 
-  async function joinFamily(e: React.FormEvent) {
+  const joinFamily = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteCode.trim() || submitting) return;
 
@@ -116,7 +120,8 @@ export default function Families() {
         const result = await response.json();
         setInviteCode('');
         setShowJoinForm(false);
-        loadFamilies(); // Reload families list
+        clientCache.delete('families-list'); // Invalidate cache
+        loadFamilies(true); // Force refresh families list
         alert(`${result.member.family.name} に参加しました！`);
       } else {
         const error = await response.json();
@@ -128,16 +133,113 @@ export default function Families() {
     } finally {
       setSubmitting(false);
     }
-  }
+  }, [inviteCode, submitting, loadFamilies]);
+
+  const memoizedFamiliesList = useMemo(() => {
+    if (families.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <div className="text-gray-400 text-6xl mb-4">👨‍👩‍👧‍👦</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            家族グループがありません
+          </h3>
+          <p className="text-gray-600 mb-6">
+            家族で訪問記録を共有するため、まずは家族グループを作成するか、既存のグループに参加してください。
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button onClick={() => setShowCreateForm(true)}>
+              家族を作る
+            </Button>
+            <Button variant="secondary" onClick={() => setShowJoinForm(true)}>
+              家族に参加
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return families.map((family) => (
+      <Card key={family.id} className="hover:shadow-md transition-shadow">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h3 className="text-lg font-semibold">{family.name}</h3>
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                  {family._count.members} メンバー
+                </span>
+              </div>
+
+              {family.description && (
+                <p className="text-gray-600 mb-3">{family.description}</p>
+              )}
+
+              <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                <span>作成者: {family.creator.name || family.creator.email}</span>
+                <span>作成日: {new Date(family.createdAt).toLocaleDateString()}</span>
+              </div>
+
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                <span>スポット記録: {family._count.spotVisits}</span>
+                <span>イベント記録: {family._count.eventVisits}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Link href={`/families/${family.id}/visits`}>
+                <Button size="sm" variant="primary">
+                  記録を見る
+                </Button>
+              </Link>
+              <Link href={`/families/${family.id}`}>
+                <Button size="sm" variant="secondary">
+                  管理
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ));
+  }, [families]);
 
   if (isLoading || loading) {
     return (
       <div className="page-container py-4">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="space-y-3">
-            <div className="h-32 bg-gray-200 rounded"></div>
-            <div className="h-32 bg-gray-200 rounded"></div>
+          <div className="flex items-center justify-between mb-6">
+            <div className="h-8 bg-gray-200 rounded w-32"></div>
+            <div className="flex gap-2">
+              <div className="h-10 bg-gray-200 rounded w-24"></div>
+              <div className="h-10 bg-gray-200 rounded w-24"></div>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="border rounded-lg p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-6 bg-gray-200 rounded w-24"></div>
+                      <div className="h-5 bg-gray-200 rounded w-16"></div>
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded w-48 mb-3"></div>
+                    <div className="flex gap-4 mb-3">
+                      <div className="h-4 bg-gray-200 rounded w-20"></div>
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="h-4 bg-gray-200 rounded w-16"></div>
+                      <div className="h-4 bg-gray-200 rounded w-20"></div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="h-8 bg-gray-200 rounded w-20"></div>
+                    <div className="h-8 bg-gray-200 rounded w-16"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -256,67 +358,7 @@ export default function Families() {
 
       {/* Families List */}
       <div className="space-y-4">
-        {families.length > 0 ? families.map((family) => (
-          <Card key={family.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold">{family.name}</h3>
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                      {family.members.length} メンバー
-                    </span>
-                  </div>
-
-                  {family.description && (
-                    <p className="text-gray-600 mb-3">{family.description}</p>
-                  )}
-
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                    <span>作成者: {family.creator.name || family.creator.email}</span>
-                    <span>作成日: {new Date(family.createdAt).toLocaleDateString()}</span>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span>スポット記録: {family._count.spotVisits}</span>
-                    <span>イベント記録: {family._count.eventVisits}</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <Link href={`/families/${family.id}/visits`}>
-                    <Button size="sm" variant="primary">
-                      記録を見る
-                    </Button>
-                  </Link>
-                  <Link href={`/families/${family.id}`}>
-                    <Button size="sm" variant="secondary">
-                      管理
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )) : (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">👨‍👩‍👧‍👦</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              家族グループがありません
-            </h3>
-            <p className="text-gray-600 mb-6">
-              家族で訪問記録を共有するため、まずは家族グループを作成するか、既存のグループに参加してください。
-            </p>
-            <div className="flex justify-center gap-3">
-              <Button onClick={() => setShowCreateForm(true)}>
-                家族を作る
-              </Button>
-              <Button variant="secondary" onClick={() => setShowJoinForm(true)}>
-                家族に参加
-              </Button>
-            </div>
-          </div>
-        )}
+        {memoizedFamiliesList}
       </div>
     </div>
   );

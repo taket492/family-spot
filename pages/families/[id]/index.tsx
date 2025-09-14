@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
+import { clientCache } from '@/lib/cache';
 
 type Family = {
   id: string;
@@ -53,18 +54,31 @@ export default function FamilyDetails() {
     }
 
     loadFamily();
-  }, [isAuthenticated, isLoading, id, router]);
+  }, [isAuthenticated, isLoading, id, router, loadFamily]);
 
-  async function loadFamily() {
+  const loadFamily = useCallback(async (forceRefresh = false) => {
     if (!id || typeof id !== 'string') return;
 
+    const cacheKey = `family-${id}`;
+
+    if (!forceRefresh) {
+      const cached = clientCache.get<Family>(cacheKey);
+      if (cached) {
+        setFamily(cached);
+        setEditForm({ name: cached.name, description: cached.description || '' });
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
-      const response = await fetch(`/api/families/${id}`);
+      const response = await fetch(`/api/families/${id}?includeMembers=true`);
       if (response.ok) {
         const data = await response.json();
         console.log('Family loaded:', data);
         setFamily(data);
         setEditForm({ name: data.name, description: data.description || '' });
+        clientCache.set(cacheKey, data, 30); // Cache for 30 seconds
       } else {
         console.error('Failed to load family');
         router.push('/families');
@@ -75,9 +89,9 @@ export default function FamilyDetails() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id, router]);
 
-  async function updateFamily(e: React.FormEvent) {
+  const updateFamily = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editForm.name.trim() || submitting || !id) return;
 
@@ -93,6 +107,8 @@ export default function FamilyDetails() {
         const updatedFamily = await response.json();
         setFamily(updatedFamily);
         setEditing(false);
+        clientCache.set(`family-${id}`, updatedFamily, 30); // Update cache
+        clientCache.delete('families-list'); // Invalidate families list cache
       } else {
         const error = await response.json();
         alert(error.error || '家族情報の更新に失敗しました');
@@ -103,7 +119,7 @@ export default function FamilyDetails() {
     } finally {
       setSubmitting(false);
     }
-  }
+  }, [editForm, submitting, id]);
 
   async function leaveFamily() {
     if (!user?.id || !id || !family) return;
@@ -136,7 +152,9 @@ export default function FamilyDetails() {
       });
 
       if (response.ok) {
-        loadFamily(); // Reload family data
+        clientCache.delete(`family-${id}`); // Invalidate family cache
+        clientCache.delete('families-list'); // Invalidate families list cache
+        loadFamily(true); // Force reload family data
       } else {
         const error = await response.json();
         alert(error.error || 'メンバーの削除に失敗しました');
@@ -158,7 +176,9 @@ export default function FamilyDetails() {
       });
 
       if (response.ok) {
-        loadFamily(); // Reload family data
+        clientCache.delete(`family-${id}`); // Invalidate family cache
+        clientCache.delete('families-list'); // Invalidate families list cache
+        loadFamily(true); // Force reload family data
       } else {
         const error = await response.json();
         alert(error.error || 'メンバー権限の変更に失敗しました');
@@ -169,12 +189,12 @@ export default function FamilyDetails() {
     }
   }
 
-  function copyInviteCode() {
+  const copyInviteCode = useCallback(() => {
     if (family?.inviteCode) {
       navigator.clipboard.writeText(family.inviteCode);
       alert('招待コードをコピーしました！');
     }
-  }
+  }, [family?.inviteCode]);
 
   if (isLoading || loading) {
     return (
@@ -188,6 +208,14 @@ export default function FamilyDetails() {
     );
   }
 
+  const { currentUserMember, isCreator, isAdmin } = useMemo(() => {
+    if (!family) return { currentUserMember: null, isCreator: false, isAdmin: false };
+    const member = family.members.find(m => m.user.id === user?.id);
+    const creator = family.createdBy === user?.id;
+    const admin = member?.role === 'admin' || creator;
+    return { currentUserMember: member, isCreator: creator, isAdmin: admin };
+  }, [family?.members, family?.createdBy, user?.id]);
+
   if (!family) {
     return (
       <div className="page-container py-4">
@@ -195,10 +223,6 @@ export default function FamilyDetails() {
       </div>
     );
   }
-
-  const currentUserMember = family.members.find(m => m.user.id === user?.id);
-  const isCreator = family.createdBy === user?.id;
-  const isAdmin = currentUserMember?.role === 'admin' || isCreator;
 
   return (
     <div className="page-container py-4">
