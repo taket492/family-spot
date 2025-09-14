@@ -20,7 +20,7 @@ export const DynamicAdvancedImage = dynamic(
 
 // Dynamic loading states component
 export const DynamicLoadingStates = dynamic(
-  () => import('@/components/ui/LoadingStates'),
+  () => import('@/components/ui/LoadingStates').then(mod => ({ default: mod.CardSkeleton })),
   {
     loading: () => <div className="animate-pulse bg-gray-200 h-20 rounded" />,
     ssr: false
@@ -97,7 +97,7 @@ export const DynamicMap = dynamic(
 // HOC for making any component dynamic
 export function withDynamicLoading<T extends {}>(
   importFn: () => Promise<{ default: React.ComponentType<T> }>,
-  loadingComponent?: React.ComponentType,
+  loadingComponent?: () => React.ReactElement,
   options: { ssr?: boolean } = { ssr: false }
 ) {
   return dynamic(importFn, {

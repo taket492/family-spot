@@ -64,7 +64,7 @@ export default function Families() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [optimisticFamilies]);
 
   useEffect(() => {
     if (isLoading) return;

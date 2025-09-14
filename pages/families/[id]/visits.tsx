@@ -103,8 +103,8 @@ export default function FamilyVisits() {
     if (!forceRefresh) {
       try {
         const [cachedFamily, cachedVisits] = await Promise.all([
-          cache.get(familyCacheKey),
-          cache.get(visitsCacheKey)
+          cache.get<any>(familyCacheKey),
+          cache.get<FamilyVisitData>(visitsCacheKey)
         ]);
 
         if (cachedFamily && cachedVisits) {
