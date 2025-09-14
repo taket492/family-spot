@@ -73,7 +73,13 @@ export default async function handler(
             }
           }
         },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          inviteCode: true,
+          createdBy: true,
+          createdAt: true,
           creator: {
             select: {
               id: true,
@@ -82,7 +88,10 @@ export default async function handler(
             }
           },
           members: {
-            include: {
+            select: {
+              id: true,
+              role: true,
+              joinedAt: true,
               user: {
                 select: {
                   id: true,
@@ -94,6 +103,7 @@ export default async function handler(
           }
         }
       });
+
 
       return res.status(201).json(family);
     }
