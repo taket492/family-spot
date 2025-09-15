@@ -10,7 +10,8 @@ const nextConfig = {
   // Enable package import optimization
   experimental: {
     optimizePackageImports: ['maplibre-gl'],
-    optimizeCss: true,
+    // Disabled to avoid requiring 'critters' during prerender on Vercel
+    optimizeCss: false,
     optimizeServerReact: true,
   },
   // Compiler optimizations
