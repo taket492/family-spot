@@ -16,6 +16,7 @@ type Spot = {
   address?: string | null;
   lat: number;
   lng: number;
+  url?: string | null;
   rating: number;
   tags: string[];
   images: string[];
@@ -324,6 +325,11 @@ export default function SpotDetail() {
             <a href={gmapsUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="secondary">地図を開く</Button>
             </a>
+            {spot.url && (
+              <a href={spot.url} target="_blank" rel="noopener noreferrer">
+                <Button variant="secondary">公式サイト</Button>
+              </a>
+            )}
             <Button onClick={goReview}>レビューを書く</Button>
             {isAdmin && (
               <Button

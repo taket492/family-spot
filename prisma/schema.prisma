@@ -16,6 +16,7 @@ model Spot {
   address      String?
   lat          Float
   lng          Float
+  url          String?
   phone        String?
   tags         String              // JSON string of string[]
   openHours    String?

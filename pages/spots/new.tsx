@@ -7,10 +7,8 @@ export default function NewSpot() {
   const router = useRouter();
   const [type, setType] = useState<'spot' | 'restaurant'>('spot');
   const [name, setName] = useState('');
-  const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
-  const [lat, setLat] = useState('');
-  const [lng, setLng] = useState('');
+  const [url, setUrl] = useState('');
   const [tags, setTags] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -25,8 +23,8 @@ export default function NewSpot() {
   }
 
   async function submit() {
-    if (!name || !city || !lat || !lng) {
-      alert('名称・市区・緯度・経度は必須です');
+    if (!name || !address) {
+      alert('名称・住所は必須です');
       return;
     }
     setSubmitting(true);
@@ -35,14 +33,14 @@ export default function NewSpot() {
       const resp = await fetch('/api/spots/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, name, city, address, lat: Number(lat), lng: Number(lng), tags, images }),
+        body: JSON.stringify({ type, name, address, url, tags, images }),
       });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data?.error || 'create_failed');
+      if (!resp.ok) throw new Error(data?.message || data?.error || 'create_failed');
       router.replace(`/spots/${data.id}`);
     } catch (e) {
       console.error(e);
-      alert('登録に失敗しました');
+      alert(e instanceof Error ? e.message : '登録に失敗しました');
     } finally {
       setSubmitting(false);
     }
@@ -63,14 +61,8 @@ export default function NewSpot() {
               </select>
             </div>
             <input className="border border-gray-300 rounded-xl px-3 py-3" placeholder="名称" value={name} onChange={(e) => setName(e.target.value)} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <input className="border border-gray-300 rounded-xl px-3 py-3" placeholder="市区" value={city} onChange={(e) => setCity(e.target.value)} />
-              <input className="border border-gray-300 rounded-xl px-3 py-3" placeholder="住所（任意）" value={address} onChange={(e) => setAddress(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <input className="border border-gray-300 rounded-xl px-3 py-3" placeholder="緯度 (例 35.1)" value={lat} onChange={(e) => setLat(e.target.value)} />
-              <input className="border border-gray-300 rounded-xl px-3 py-3" placeholder="経度 (例 138.9)" value={lng} onChange={(e) => setLng(e.target.value)} />
-            </div>
+            <input className="border border-gray-300 rounded-xl px-3 py-3" placeholder="住所" value={address} onChange={(e) => setAddress(e.target.value)} />
+            <input className="border border-gray-300 rounded-xl px-3 py-3" placeholder="公式サイトURL（任意）" value={url} onChange={(e) => setUrl(e.target.value)} />
             <input className="border border-gray-300 rounded-xl px-3 py-3" placeholder="タグ（読点/カンマ区切り）" value={tags} onChange={(e) => setTags(e.target.value)} />
             <input className="border border-gray-300 rounded-xl px-3 py-3" type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
             <div>
@@ -82,4 +74,3 @@ export default function NewSpot() {
     </div>
   );
 }
-

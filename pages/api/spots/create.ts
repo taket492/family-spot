@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/db';
+import { geocodeAddress } from '@/lib/geocoding';
 
 function toArray(v: any): string[] {
   if (v == null) return [];
@@ -19,16 +20,37 @@ function toArray(v: any): string[] {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   try {
-    const { type, name, city, address, lat, lng, phone, tags, openHours, priceBand, images } = req.body || {};
-    if (!type || !name || !city || lat == null || lng == null)
-      return res.status(400).json({ error: 'invalid_payload' });
+    const { type, name, address, url, city: cityInput, lat, lng, phone, tags, openHours, priceBand, images } = req.body || {};
+    if (!type || !name) return res.status(400).json({ error: 'invalid_payload' });
+
+    let latNum: number | null = lat == null ? null : Number(lat);
+    let lngNum: number | null = lng == null ? null : Number(lng);
+    let city: string | null = cityInput ? String(cityInput) : null;
+    let normalizedAddress: string | null = address ? String(address) : null;
+
+    // Try geocoding when lat/lng are missing but we have some address hint
+    if ((latNum == null || isNaN(latNum) || lngNum == null || isNaN(lngNum)) && (normalizedAddress || name)) {
+      const geo = await geocodeAddress({ name: String(name), city: city || undefined, address: normalizedAddress || undefined });
+      if (geo?.lat != null && geo?.lng != null) {
+        latNum = Number(geo.lat);
+        lngNum = Number(geo.lng);
+        if (!city && geo.city) city = String(geo.city);
+        if (!normalizedAddress && geo.address) normalizedAddress = String(geo.address);
+      }
+    }
+
+    if (latNum == null || isNaN(latNum) || lngNum == null || isNaN(lngNum)) {
+      return res.status(400).json({ error: 'geocoding_failed', message: '住所から位置特定ができませんでした。別の住所表記をお試しください。' });
+    }
+
     const data: any = {
       type: String(type),
       name: String(name),
-      city: String(city),
-      address: address ? String(address) : null,
-      lat: Number(lat),
-      lng: Number(lng),
+      city: String(city || ''),
+      address: normalizedAddress,
+      lat: latNum,
+      lng: lngNum,
+      url: url ? String(url) : null,
       phone: phone ? String(phone) : null,
       tags: JSON.stringify(toArray(tags)),
       openHours: openHours ? String(openHours) : null,
@@ -42,4 +64,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'internal_error' });
   }
 }
-
