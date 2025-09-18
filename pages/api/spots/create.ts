@@ -39,17 +39,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (latNum == null || isNaN(latNum) || lngNum == null || isNaN(lngNum)) {
-      return res.status(400).json({ error: 'geocoding_failed', message: '住所から位置特定ができませんでした。別の住所表記をお試しください。' });
-    }
-
     const data: any = {
       type: String(type),
       name: String(name),
       city: String(city || ''),
       address: normalizedAddress,
-      lat: latNum,
-      lng: lngNum,
+      lat: latNum != null && !isNaN(latNum) ? latNum : null,
+      lng: lngNum != null && !isNaN(lngNum) ? lngNum : null,
       url: url ? String(url) : null,
       phone: phone ? String(phone) : null,
       tags: JSON.stringify(toArray(tags)),

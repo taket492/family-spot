@@ -27,8 +27,8 @@ type Spot = {
   name: string;
   type: string;
   city: string;
-  lat: number;
-  lng: number;
+  lat?: number | null;
+  lng?: number | null;
   rating: number;
   tags: string[];
   images: string[];
@@ -164,7 +164,11 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
   }, [initialItems.length, initialQ, q, mode]);
 
   const mapSpots = useMemo(() => {
-    if (mode === 'spots') return items.map(({ id, name, lat, lng, type }) => ({ id, name, lat, lng, type }));
+    if (mode === 'spots') {
+      return items
+        .filter((s) => Number.isFinite(s.lat as any) && Number.isFinite(s.lng as any))
+        .map(({ id, name, lat, lng, type }) => ({ id, name, lat: lat as number, lng: lng as number, type }));
+    }
     return events.map(({ id, title, lat, lng }) => ({ id, name: title, lat, lng, type: 'event' as const }));
   }, [items, events, mode]);
 
@@ -186,7 +190,8 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
     if (sortMode === 'rating') return [...items].sort((a, b) => (b.rating || 0) - (a.rating || 0));
     if (sortMode === 'distance' && geo) {
       return [...items]
-        .map((s) => ({ s, d: haversine(geo, { lat: s.lat, lng: s.lng }) }))
+        .filter((s) => Number.isFinite(s.lat as any) && Number.isFinite(s.lng as any))
+        .map((s) => ({ s, d: haversine(geo, { lat: s.lat as number, lng: s.lng as number }) }))
         .sort((a, b) => a.d - b.d)
         .map(({ s }) => s);
     }
@@ -400,7 +405,9 @@ export default function SearchPage({ initialQ, initialItems = [], initialTotal =
             ) : (
               <div className="space-y-4 animate-fade-in">
                 {sortedSpots.map((s) => {
-                  const distance = geo ? Math.round(haversine(geo, { lat: s.lat, lng: s.lng }) / 100) / 10 : null; // km
+                  const distance = geo && Number.isFinite(s.lat as any) && Number.isFinite(s.lng as any)
+                    ? Math.round(haversine(geo, { lat: s.lat as number, lng: s.lng as number }) / 100) / 10
+                    : null; // km
                   return (
                     <Link key={s.id} href={`/spots/${s.id}`} className="block group" prefetch={false}>
                       <Card interactive className="hover:scale-[1.01] transition-all duration-200">

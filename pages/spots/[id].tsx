@@ -14,8 +14,8 @@ type Spot = {
   name: string;
   city: string;
   address?: string | null;
-  lat: number;
-  lng: number;
+  lat?: number | null;
+  lng?: number | null;
   url?: string | null;
   rating: number;
   tags: string[];
@@ -169,7 +169,13 @@ export default function SpotDetail() {
 
   const gmapsUrl = useMemo(() => {
     if (!spot) return '#';
-    return `https://www.google.com/maps/search/?api=1&query=${spot.lat},${spot.lng}`;
+    if (spot.lat != null && spot.lng != null) {
+      return `https://www.google.com/maps/search/?api=1&query=${spot.lat},${spot.lng}`;
+    }
+    if (spot.address) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.address)}`;
+    }
+    return '#';
   }, [spot]);
 
   return (
@@ -322,9 +328,11 @@ export default function SpotDetail() {
 
           {/* Actions */}
           <div className="mt-3 flex gap-2 flex-wrap">
-            <a href={gmapsUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="secondary">地図を開く</Button>
-            </a>
+            {gmapsUrl !== '#' && (
+              <a href={gmapsUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="secondary">地図を開く</Button>
+              </a>
+            )}
             {spot.url && (
               <a href={spot.url} target="_blank" rel="noopener noreferrer">
                 <Button variant="secondary">公式サイト</Button>
